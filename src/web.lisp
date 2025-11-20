@@ -1,7 +1,6 @@
 (defpackage voro.web
   (:use :cl :caveman2)
-  (:export :<app>
-           :*app*))
+  (:export :*app*))
 
 (in-package :voro.web)
 

@@ -1,7 +1,7 @@
 (defpackage voro.handler.auth
   (:use :cl :caveman2)
   (:import-from :voro.web
-                :<app>)
+                :*app*)
   (:import-from :voro.service.auth
                 :register-user
                 :authenticate-user
@@ -44,7 +44,7 @@
 ;;; ルート定義
 
 ;; ユーザー登録
-(defroute (<app> "/api/auth/register" :method :POST) ()
+(defroute (*app* "/api/auth/register" :method :POST) ()
   (let ((username (get-request-body-param "username"))
         (password (get-request-body-param "password"))
         (email (get-request-body-param "email")))
@@ -76,7 +76,7 @@
               (response-error 500 "Internal server error" :error-id error-id)))))))
 
 ;; ログイン
-(defroute (<app> "/api/auth/login" :method :POST) ()
+(defroute (*app* "/api/auth/login" :method :POST) ()
   (let ((username (get-request-body-param "username"))
         (password (get-request-body-param "password")))
 
@@ -102,7 +102,7 @@
               (response-error 401 "Invalid username or password"))))))
 
 ;; ログアウト
-(defroute (<app> "/api/auth/logout" :method :POST) ()
+(defroute (*app* "/api/auth/logout" :method :POST) ()
   (let* ((cookies (lack.request:request-cookies *request*))
          (session-id (cdr (assoc "session_id" cookies :test #'string=))))
 
