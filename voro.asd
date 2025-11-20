@@ -41,10 +41,6 @@
        ;; 設定
        (:file "config")
 
-       ;; データベース
-       (:file "db" :depends-on ("config"))
-       (:file "redis" :depends-on ("config"))
-
        ;; ユーティリティ
        (:module "util"
         :depends-on ("config")
@@ -53,6 +49,10 @@
           (:file "response")
           (:file "crypto")
           (:file "validation")))
+
+       ;; データベース
+       (:file "db" :depends-on ("config" "util"))
+       (:file "redis" :depends-on ("config" "util"))
 
        ;; モデル
        (:module "model"
@@ -72,17 +72,17 @@
         :components (
           (:file "auth")))
 
+       ;; Webアプリケーション
+       (:file "web")
+
        ;; ハンドラー
        (:module "handler"
-        :depends-on ("service" "middleware" "util")
+        :depends-on ("service" "middleware" "util" "web")
         :components (
           (:file "auth")))
 
-       ;; Webアプリケーション
-       (:file "web" :depends-on ("handler"))
-
        ;; メインファイル
-       (:file "main" :depends-on ("config" "db" "redis" "web")))))
+       (:file "main" :depends-on ("config" "db" "redis" "handler")))))
   :description "Voro - Common Lisp Blog System"
   :in-order-to ((test-op (test-op "voro/test"))))
 

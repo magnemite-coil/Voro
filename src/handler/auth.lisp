@@ -1,5 +1,7 @@
 (defpackage voro.handler.auth
   (:use :cl :caveman2)
+  (:import-from :voro.web
+                :<app>)
   (:import-from :voro.service.auth
                 :register-user
                 :authenticate-user
@@ -42,67 +44,65 @@
 ;;; ルート定義
 
 ;; ユーザー登録
-(defroute ("/api/auth/register" :method :POST) ()
+(defroute (<app> "/api/auth/register" :method :POST) ()
   (let ((username (get-request-body-param "username"))
         (password (get-request-body-param "password"))
         (email (get-request-body-param "email")))
 
     ;; 入力検証
-    (unless (and username password)
-      (return-from route
-        (response-error 400 "Username and password are required")))
+    (if (not (and username password))
+        (response-error 400 "Username and password are required")
 
-    ;; ユーザー登録
-    (handler-case
-        (multiple-value-bind (user session-id)
-            (register-user username password :email email)
+        ;; ユーザー登録
+        (handler-case
+            (multiple-value-bind (user session-id)
+                (register-user username password :email email)
 
-          ;; セッションCookieを設定
-          (set-session-cookie session-id)
+              ;; セッションCookieを設定
+              (set-session-cookie session-id)
 
-          ;; 成功レスポンス
-          (response-success
-           (list :|user| (list :|id| (voro.model.user:user-id user)
-                               :|username| (voro.model.user:user-username user)))))
+              ;; 成功レスポンス
+              (response-success
+               (list :|user| (list :|id| (voro.model.user:user-id user)
+                                   :|username| (voro.model.user:user-username user)))))
 
-      ;; バリデーションエラー（ユーザー向けメッセージをそのまま返す）
-      (validation-error (e)
-        (response-error 400 (validation-error-message e)))
+          ;; バリデーションエラー（ユーザー向けメッセージをそのまま返す）
+          (validation-error (e)
+            (response-error 400 (validation-error-message e)))
 
-      ;; その他のエラー（詳細はログのみ、ユーザーには一般的なメッセージ）
-      (error (e)
-        (let ((error-id (log-error "Registration failed" :error e)))
-          (response-error 500 "Internal server error" :error-id error-id))))))
+          ;; その他のエラー（詳細はログのみ、ユーザーには一般的なメッセージ）
+          (error (e)
+            (let ((error-id (log-error "Registration failed" :error e)))
+              (response-error 500 "Internal server error" :error-id error-id)))))))
 
 ;; ログイン
-(defroute ("/api/auth/login" :method :POST) ()
+(defroute (<app> "/api/auth/login" :method :POST) ()
   (let ((username (get-request-body-param "username"))
         (password (get-request-body-param "password")))
 
     ;; 入力検証
-    (unless (and username password)
-      (return-from route
-        (response-error 400 "Username and password are required")))
+    (if (not (and username password))
+        (response-error 400 "Username and password are required")
 
-    ;; 認証
-    (multiple-value-bind (user session-id)
-        (authenticate-user username password)
+        ;; 認証
+        (multiple-value-bind (user session-id)
+            (authenticate-user username password)
 
-      (if user
-          (progn
-            ;; セッションCookieを設定
-            (set-session-cookie session-id)
+          (if user
+              (progn
+                ;; セッションCookieを設定
+                (set-session-cookie session-id)
 
-            ;; 成功レスポンス
-            (response-success
-             (list :|user| (list :|id| (voro.model.user:user-id user)
-                                 :|username| (voro.model.user:user-username user)))))
+                ;; 成功レスポンス
+                (response-success
+                 (list :|user| (list :|id| (voro.model.user:user-id user)
+                                     :|username| (voro.model.user:user-username user)))))
 
-          ;; 認証失敗
-          (response-error 401 "Invalid username or password")))))
+              ;; 認証失敗
+              (response-error 401 "Invalid username or password"))))))
 
 ;; ログアウト
-(defroute ("/api/auth/logout" :method :POST) ()
+(defroute (<app> "/api/auth/logout" :method :POST) ()
   (let* ((cookies (lack.request:request-cookies *request*))
          (session-id (cdr (assoc "session_id" cookies :test #'string=))))
 
