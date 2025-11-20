@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ダッシュボード - Blog CMS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #262335;
+            --bg-secondary: #2a2139;
+            --bg-tertiary: #34294f;
+            --bg-hover: #3d3352;
+            --text-primary: #c9c5bc;
+            --text-secondary: #b8b8b8;
+            --text-muted: #848bbd;
+            --border-color: #34294f;
+            --neon-cyan: #36f9f6;
+            --neon-pink: #ff7edb;
+            --neon-yellow: #fede5d;
+            --neon-green: #72f1b8;
+            --neon-orange: #fe4450;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans JP', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            padding: 0 30px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--neon-yellow);
+            text-shadow: 0 0 10px var(--neon-yellow);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 5px;
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            color: var(--neon-cyan);
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+            font-size: 1.1rem;
+            background: transparent;
+            text-shadow: 0 0 6px var(--neon-cyan);
+        }
+
+        .nav-tab:hover:not(.active) {
+            text-shadow: 0 0 8px var(--neon-cyan);
+        }
+
+        .nav-tab.active {
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: transparent;
+            color: var(--neon-cyan);
+            border: 2px solid var(--neon-cyan);
+            text-shadow: 0 0 8px var(--neon-cyan);
+            box-shadow: 0 0 10px rgba(54, 249, 246, 0.3);
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .btn-primary:hover {
+            background: rgba(54, 249, 246, 0.1);
+            box-shadow: 0 0 20px rgba(54, 249, 246, 0.5);
+            text-shadow: 0 0 12px var(--neon-cyan);
+        }
+
+        .main-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+        }
+
+        .content-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 15px var(--neon-cyan);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            padding: 25px;
+            border-radius: 8px;
+            border: 2px solid var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(54, 249, 246, 0.2);
+            transition: all 0.2s;
+        }
+
+        .stat-card:hover {
+            box-shadow: 0 0 25px rgba(54, 249, 246, 0.4);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--neon-pink);
+            text-shadow: 0 0 8px var(--neon-pink);
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .posts-table {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(54, 249, 246, 0.2);
+        }
+
+        .table-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 120px;
+            gap: 20px;
+            padding: 20px 25px;
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--neon-cyan);
+        }
+
+        .table-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 120px;
+            gap: 20px;
+            padding: 20px 25px;
+            border-top: 1px solid var(--border-color);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .table-row:hover {
+            background: var(--bg-hover);
+        }
+
+        .post-title {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .post-status {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .status-published {
+            background: rgba(114, 241, 184, 0.2);
+            color: var(--neon-green);
+            border: 1px solid var(--neon-green);
+            box-shadow: 0 0 8px rgba(114, 241, 184, 0.3);
+        }
+
+        .status-draft {
+            background: rgba(254, 222, 93, 0.2);
+            color: var(--neon-yellow);
+            border: 1px solid var(--neon-yellow);
+            box-shadow: 0 0 8px rgba(254, 222, 93, 0.3);
+        }
+
+        .post-date {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 5px 10px;
+            background: transparent;
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            text-shadow: 0 0 6px var(--neon-cyan);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: rgba(54, 249, 246, 0.1);
+            box-shadow: 0 0 10px rgba(54, 249, 246, 0.3);
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .action-btn-delete {
+            padding: 5px 10px;
+            background: transparent;
+            border: 1px solid #ff6b7a;
+            color: #ff6b7a;
+            text-shadow: 0 0 8px rgba(255, 107, 122, 0.8);
+            box-shadow: 0 0 12px rgba(255, 107, 122, 0.3);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .action-btn-delete:hover {
+            background: rgba(255, 107, 122, 0.1);
+            box-shadow: 0 0 18px rgba(255, 107, 122, 0.5);
+            text-shadow: 0 0 12px rgba(255, 107, 122, 0.9);
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .page-btn {
+            padding: 10px 16px;
+            background: transparent;
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            min-width: 45px;
+        }
+
+        .page-btn:hover {
+            background: rgba(54, 249, 246, 0.1);
+            box-shadow: 0 0 10px rgba(54, 249, 246, 0.3);
+        }
+
+        .page-btn.active {
+            background: rgba(54, 249, 246, 0.2);
+            box-shadow: 0 0 15px rgba(54, 249, 246, 0.4);
+            text-shadow: 0 0 8px var(--neon-cyan);
+        }
+
+        .page-prev, .page-next {
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">CMS</div>
+            <nav class="nav-tabs">
+                <div class="nav-tab active">検索</div>
+                <div class="nav-tab">通知</div>
+                <div class="nav-tab">設定</div>
+            </nav>
+        </div>
+        <div class="header-actions">
+            <button class="btn-primary">+ 新規記事</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="content-wrapper">
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">総記事数</div>
+                    <div class="stat-value">42</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">公開中</div>
+                    <div class="stat-value">38</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">下書き</div>
+                    <div class="stat-value">4</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">今月の投稿</div>
+                    <div class="stat-value">7</div>
+                </div>
+            </div>
+
+            <div class="section-header">
+                <h2 class="section-title">記事一覧</h2>
+            </div>
+
+            <div class="posts-table">
+                <div class="table-header">
+                    <div>タイトル</div>
+                    <div>ステータス</div>
+                    <div>更新日</div>
+                    <div>操作</div>
+                </div>
+                <div class="table-row">
+                    <div class="post-title">Vue.js 3の新機能について解説</div>
+                    <div><span class="post-status status-published">公開中</span></div>
+                    <div class="post-date">2025/10/25</div>
+                    <div class="post-actions">
+                        <button class="action-btn">編集</button>
+                        <button class="action-btn-delete">削除</button>
+                    </div>
+                </div>
+                <div class="table-row">
+                    <div class="post-title">TypeScriptで型安全なコードを書くコツ</div>
+                    <div><span class="post-status status-published">公開中</span></div>
+                    <div class="post-date">2025/10/23</div>
+                    <div class="post-actions">
+                        <button class="action-btn">編集</button>
+                        <button class="action-btn-delete">削除</button>
+                    </div>
+                </div>
+                <div class="table-row">
+                    <div class="post-title">React vs Vue: フレームワークの選び方</div>
+                    <div><span class="post-status status-draft">下書き</span></div>
+                    <div class="post-date">2025/10/22</div>
+                    <div class="post-actions">
+                        <button class="action-btn">編集</button>
+                        <button class="action-btn-delete">削除</button>
+                    </div>
+                </div>
+                <div class="table-row">
+                    <div class="post-title">CSSグリッドレイアウト完全ガイド</div>
+                    <div><span class="post-status status-published">公開中</span></div>
+                    <div class="post-date">2025/10/20</div>
+                    <div class="post-actions">
+                        <button class="action-btn">編集</button>
+                        <button class="action-btn-delete">削除</button>
+                    </div>
+                </div>
+                <div class="table-row">
+                    <div class="post-title">JavaScriptの非同期処理入門</div>
+                    <div><span class="post-status status-published">公開中</span></div>
+                    <div class="post-date">2025/10/18</div>
+                    <div class="post-actions">
+                        <button class="action-btn">編集</button>
+                        <button class="action-btn-delete">削除</button>
+                    </div>
+                </div>
+                <div class="table-row">
+                    <div class="post-title">Webアクセシビリティの基本</div>
+                    <div><span class="post-status status-draft">下書き</span></div>
+                    <div class="post-date">2025/10/15</div>
+                    <div class="post-actions">
+                        <button class="action-btn">編集</button>
+                        <button class="action-btn-delete">削除</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pagination">
+                <button class="page-btn page-prev">前へ</button>
+                <button class="page-btn page-number active">1</button>
+                <button class="page-btn page-number">2</button>
+                <button class="page-btn page-number">3</button>
+                <button class="page-btn page-number">4</button>
+                <button class="page-btn page-number">5</button>
+                <button class="page-btn page-next">次へ</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

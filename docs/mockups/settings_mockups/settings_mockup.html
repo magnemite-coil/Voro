@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>設定 - Blog CMS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #262335;
+            --bg-secondary: #2a2139;
+            --bg-tertiary: #34294f;
+            --bg-hover: #3d3352;
+            --text-primary: #c9c5bc;
+            --text-secondary: #b8b8b8;
+            --text-muted: #848bbd;
+            --border-color: #34294f;
+            --neon-cyan: #36f9f6;
+            --neon-pink: #ff7edb;
+            --neon-yellow: #fede5d;
+            --neon-green: #72f1b8;
+            --neon-orange: #fe4450;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans JP', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            padding: 0 30px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--neon-yellow);
+            text-shadow: 0 0 10px var(--neon-yellow);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 5px;
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            color: var(--neon-cyan);
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+            font-size: 1.1rem;
+            background: transparent;
+            text-shadow: 0 0 6px var(--neon-cyan);
+        }
+
+        .nav-tab:hover:not(.active) {
+            text-shadow: 0 0 8px var(--neon-cyan);
+        }
+
+        .nav-tab.active {
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .main-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+        }
+
+        .content-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            margin-bottom: 40px;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 15px var(--neon-cyan);
+        }
+
+        /* プロフィール設定セクション（シアン・ピンク） */
+        .settings-section.profile {
+            background: var(--bg-secondary);
+            padding: 30px;
+            border-radius: 8px;
+            border: 2px solid var(--neon-pink);
+            box-shadow: 0 0 20px rgba(255, 126, 219, 0.25);
+            margin-bottom: 40px;
+        }
+
+        .settings-section.profile .section-title {
+            font-size: 1.5rem;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .settings-section.profile .subsection-title {
+            font-size: 1.2rem;
+            color: var(--neon-pink);
+            text-shadow: 0 0 8px var(--neon-pink);
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+
+        .settings-section.profile .form-label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            color: var(--neon-pink);
+            text-shadow: 0 0 8px var(--neon-pink);
+            font-weight: 500;
+        }
+
+        .settings-section.profile .form-input,
+        .settings-section.profile .form-textarea {
+            width: 100%;
+            padding: 12px 15px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.2s;
+            box-shadow: 0 0 10px rgba(54, 249, 246, 0.2);
+        }
+
+        .settings-section.profile .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .settings-section.profile .form-input:focus,
+        .settings-section.profile .form-textarea:focus {
+            outline: none;
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 15px rgba(255, 126, 219, 0.4);
+        }
+
+        /* サイト基本設定セクション（グリーン・イエロー） */
+        .settings-section.site {
+            background: var(--bg-secondary);
+            padding: 30px;
+            border-radius: 8px;
+            border: 2px solid var(--neon-green);
+            box-shadow: 0 0 20px rgba(114, 241, 184, 0.25);
+            margin-bottom: 40px;
+        }
+
+        .settings-section.site .section-title {
+            font-size: 1.5rem;
+            color: var(--neon-yellow);
+            text-shadow: 0 0 10px var(--neon-yellow);
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .settings-section.site .subsection-title {
+            font-size: 1.2rem;
+            color: var(--neon-green);
+            text-shadow: 0 0 8px var(--neon-green);
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+
+        .settings-section.site .form-label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            color: var(--neon-green);
+            text-shadow: 0 0 8px var(--neon-green);
+            font-weight: 500;
+        }
+
+        .settings-section.site .form-input,
+        .settings-section.site .form-textarea,
+        .settings-section.site .form-select {
+            width: 100%;
+            padding: 12px 15px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--neon-yellow);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.2s;
+            box-shadow: 0 0 10px rgba(254, 222, 93, 0.2);
+        }
+
+        .settings-section.site .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .settings-section.site .form-select {
+            cursor: pointer;
+        }
+
+        .settings-section.site .form-input:focus,
+        .settings-section.site .form-textarea:focus,
+        .settings-section.site .form-select:focus {
+            outline: none;
+            border-color: var(--neon-green);
+            box-shadow: 0 0 15px rgba(114, 241, 184, 0.4);
+        }
+
+        /* セキュリティ設定セクション（オレンジ・ピンク） */
+        .settings-section.security {
+            background: var(--bg-secondary);
+            padding: 30px;
+            border-radius: 8px;
+            border: 2px solid var(--neon-orange);
+            box-shadow: 0 0 20px rgba(254, 68, 80, 0.25);
+            margin-bottom: 40px;
+        }
+
+        .settings-section.security .section-title {
+            font-size: 1.5rem;
+            color: var(--neon-pink);
+            text-shadow: 0 0 10px var(--neon-pink);
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .settings-section.security .subsection-title {
+            font-size: 1.2rem;
+            color: var(--neon-orange);
+            text-shadow: 0 0 8px var(--neon-orange);
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+
+        .settings-section.security .form-label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            color: var(--neon-orange);
+            text-shadow: 0 0 8px var(--neon-orange);
+            font-weight: 500;
+        }
+
+        .settings-section.security .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--neon-pink);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.2s;
+            box-shadow: 0 0 10px rgba(255, 126, 219, 0.2);
+        }
+
+        .settings-section.security .form-input:focus {
+            outline: none;
+            border-color: var(--neon-orange);
+            box-shadow: 0 0 15px rgba(254, 68, 80, 0.4);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .avatar-upload {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .avatar-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--neon-pink);
+            box-shadow: 0 0 20px rgba(255, 126, 219, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .upload-btn {
+            background: transparent;
+            color: var(--neon-cyan);
+            border: 2px solid var(--neon-cyan);
+            text-shadow: 0 0 8px var(--neon-cyan);
+            box-shadow: 0 0 10px rgba(54, 249, 246, 0.3);
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .upload-btn:hover {
+            background: rgba(54, 249, 246, 0.1);
+            box-shadow: 0 0 20px rgba(54, 249, 246, 0.5);
+            text-shadow: 0 0 12px var(--neon-cyan);
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* サイト設定のトグル（グリーン・イエロー） */
+        .settings-section.site .switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--neon-yellow);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px rgba(254, 222, 93, 0.2);
+        }
+
+        .settings-section.site .switch.active {
+            background: rgba(114, 241, 184, 0.2);
+            border-color: var(--neon-green);
+            box-shadow: 0 0 15px rgba(114, 241, 184, 0.4);
+        }
+
+        .settings-section.site .switch-handle {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: var(--neon-yellow);
+            border-radius: 50%;
+            transition: all 0.3s;
+            box-shadow: 0 0 8px var(--neon-yellow);
+        }
+
+        .settings-section.site .switch.active .switch-handle {
+            left: 33px;
+            background: var(--neon-green);
+            box-shadow: 0 0 10px var(--neon-green);
+        }
+
+        /* セキュリティ設定のトグル（ピンク・グリーン） */
+        .settings-section.security .switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--neon-pink);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px rgba(255, 126, 219, 0.2);
+        }
+
+        .settings-section.security .switch.active {
+            background: rgba(114, 241, 184, 0.2);
+            border-color: var(--neon-green);
+            box-shadow: 0 0 15px rgba(114, 241, 184, 0.4);
+        }
+
+        .settings-section.security .switch-handle {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: var(--neon-pink);
+            border-radius: 50%;
+            transition: all 0.3s;
+            box-shadow: 0 0 8px var(--neon-pink);
+        }
+
+        .settings-section.security .switch.active .switch-handle {
+            left: 33px;
+            background: var(--neon-green);
+            box-shadow: 0 0 10px var(--neon-green);
+        }
+
+        .toggle-label {
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+
+        .password-requirements {
+            background: var(--bg-tertiary);
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            margin-top: 10px;
+        }
+
+        .requirement-title {
+            font-size: 0.9rem;
+            color: var(--neon-pink);
+            text-shadow: 0 0 6px var(--neon-pink);
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .requirement-item {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+            padding-left: 15px;
+            position: relative;
+        }
+
+        .requirement-item:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--neon-orange);
+        }
+
+        .session-list {
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .session-item {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .session-item:last-child {
+            border-bottom: none;
+        }
+
+        .session-info {
+            flex: 1;
+        }
+
+        .session-device {
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .session-current {
+            display: inline-block;
+            background: rgba(114, 241, 184, 0.2);
+            color: var(--neon-green);
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            border: 1px solid var(--neon-green);
+            box-shadow: 0 0 8px rgba(114, 241, 184, 0.3);
+            margin-left: 10px;
+        }
+
+        .session-details {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        .btn-revoke {
+            background: transparent;
+            color: var(--neon-orange);
+            border: 1px solid var(--neon-orange);
+            text-shadow: 0 0 6px var(--neon-orange);
+            box-shadow: 0 0 10px rgba(254, 68, 80, 0.2);
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .btn-revoke:hover {
+            background: rgba(254, 68, 80, 0.1);
+            box-shadow: 0 0 18px rgba(254, 68, 80, 0.4);
+            text-shadow: 0 0 10px var(--neon-orange);
+        }
+
+        .danger-zone {
+            background: rgba(254, 68, 80, 0.05);
+            border: 2px solid var(--neon-orange);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(254, 68, 80, 0.15);
+            margin-top: 30px;
+        }
+
+        .danger-title {
+            font-size: 1.1rem;
+            color: var(--neon-orange);
+            text-shadow: 0 0 10px var(--neon-orange);
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .danger-text {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* プロフィール設定のボタン（ピンク） */
+        .settings-section.profile .btn-save {
+            background: transparent;
+            color: var(--neon-pink);
+            border: 2px solid var(--neon-pink);
+            text-shadow: 0 0 8px var(--neon-pink);
+            box-shadow: 0 0 12px rgba(255, 126, 219, 0.3);
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+
+        .settings-section.profile .btn-save:hover {
+            background: rgba(255, 126, 219, 0.15);
+            box-shadow: 0 0 25px rgba(255, 126, 219, 0.5);
+            text-shadow: 0 0 12px var(--neon-pink);
+        }
+
+        /* サイト設定のボタン（グリーン） */
+        .settings-section.site .btn-save {
+            background: transparent;
+            color: var(--neon-green);
+            border: 2px solid var(--neon-green);
+            text-shadow: 0 0 8px var(--neon-green);
+            box-shadow: 0 0 12px rgba(114, 241, 184, 0.3);
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+
+        .settings-section.site .btn-save:hover {
+            background: rgba(114, 241, 184, 0.15);
+            box-shadow: 0 0 25px rgba(114, 241, 184, 0.5);
+            text-shadow: 0 0 12px var(--neon-green);
+        }
+
+        /* セキュリティ設定のボタン（オレンジ） */
+        .settings-section.security .btn-save,
+        .btn-danger {
+            background: transparent;
+            color: var(--neon-orange);
+            border: 2px solid var(--neon-orange);
+            text-shadow: 0 0 8px var(--neon-orange);
+            box-shadow: 0 0 12px rgba(254, 68, 80, 0.3);
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+
+        .settings-section.security .btn-save:hover,
+        .btn-danger:hover {
+            background: rgba(254, 68, 80, 0.15);
+            box-shadow: 0 0 25px rgba(254, 68, 80, 0.5);
+            text-shadow: 0 0 12px var(--neon-orange);
+        }
+
+        .btn-cancel {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .btn-cancel:hover {
+            border-color: var(--text-secondary);
+            background: rgba(184, 184, 184, 0.05);
+        }
+
+        .form-hint {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">CMS</div>
+            <nav class="nav-tabs">
+                <div class="nav-tab">検索</div>
+                <div class="nav-tab">通知</div>
+                <div class="nav-tab active">ログアウト</div>
+            </nav>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="content-wrapper">
+            <h1 class="page-title">設定</h1>
+
+            <!-- プロフィール設定セクション -->
+            <div class="settings-section profile">
+                <h2 class="section-title">プロフィール設定</h2>
+                
+                <div class="form-group">
+                    <label class="form-label">アバター</label>
+                    <div class="avatar-upload">
+                        <div class="avatar-preview">👤</div>
+                        <button class="upload-btn">画像をアップロード</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">表示名</label>
+                    <input type="text" class="form-input" value="山田太郎" placeholder="表示名を入力">
+                    <div class="form-hint">ブログ上で表示される名前です</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">ユーザーID</label>
+                    <input type="text" class="form-input" value="yamada_taro" placeholder="ユーザーIDを入力">
+                    <div class="form-hint">半角英数字とアンダースコアのみ使用可能です</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">メールアドレス</label>
+                    <input type="email" class="form-input" value="yamada@example.com" placeholder="メールアドレス">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">自己紹介</label>
+                    <textarea class="form-textarea" placeholder="自己紹介文を入力してください">Webエンジニアとして活動しています。フロントエンド開発が専門です。</textarea>
+                    <div class="form-hint">最大500文字まで入力できます</div>
+                </div>
+
+                <h3 class="subsection-title">SNSリンク</h3>
+                
+                <div class="form-group">
+                    <label class="form-label">Twitter / X</label>
+                    <input type="text" class="form-input" value="https://twitter.com/username" placeholder="TwitterのURL">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">GitHub</label>
+                    <input type="text" class="form-input" value="https://github.com/username" placeholder="GitHubのURL">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Webサイト</label>
+                    <input type="text" class="form-input" placeholder="個人サイトのURL">
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn-cancel">キャンセル</button>
+                    <button class="btn-save">変更を保存</button>
+                </div>
+            </div>
+
+            <!-- サイト基本設定セクション -->
+            <div class="settings-section site">
+                <h2 class="section-title">サイト基本設定</h2>
+                
+                <div class="form-group">
+                    <label class="form-label">サイト名</label>
+                    <input type="text" class="form-input" value="Tech Blog" placeholder="サイト名を入力">
+                    <div class="form-hint">ブラウザのタブやヘッダーに表示されます</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">サイト説明</label>
+                    <textarea class="form-textarea" placeholder="サイトの説明を入力">Web開発とプログラミングに関する技術ブログです。最新の技術情報や実装例を紹介しています。</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">言語設定</label>
+                    <select class="form-select">
+                        <option value="ja" selected>日本語</option>
+                        <option value="en">English</option>
+                        <option value="zh">中文</option>
+                        <option value="ko">한국어</option>
+                    </select>
+                </div>
+
+                <h3 class="subsection-title">表示設定</h3>
+                
+                <div class="form-group">
+                    <label class="form-label">1ページあたりの記事数</label>
+                    <select class="form-select">
+                        <option value="5">5件</option>
+                        <option value="10" selected>10件</option>
+                        <option value="20">20件</option>
+                        <option value="30">30件</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">日付表示形式</label>
+                    <select class="form-select">
+                        <option value="1" selected>2025/10/28</option>
+                        <option value="2">2025-10-28</option>
+                        <option value="3">2025年10月28日</option>
+                        <option value="4">Oct 28, 2025</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">コメント機能</label>
+                    <div class="toggle-switch">
+                        <div class="switch active">
+                            <div class="switch-handle"></div>
+                        </div>
+                        <span class="toggle-label">有効にする</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">検索機能</label>
+                    <div class="toggle-switch">
+                        <div class="switch active">
+                            <div class="switch-handle"></div>
+                        </div>
+                        <span class="toggle-label">有効にする</span>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn-cancel">キャンセル</button>
+                    <button class="btn-save">変更を保存</button>
+                </div>
+            </div>
+
+            <!-- セキュリティ設定セクション -->
+            <div class="settings-section security">
+                <h2 class="section-title">セキュリティ設定</h2>
+                
+                <h3 class="subsection-title">パスワード変更</h3>
+                
+                <div class="form-group">
+                    <label class="form-label">現在のパスワード</label>
+                    <input type="password" class="form-input" placeholder="現在のパスワードを入力">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">新しいパスワード</label>
+                    <input type="password" class="form-input" placeholder="新しいパスワードを入力">
+                    
+                    <div class="password-requirements">
+                        <div class="requirement-title">パスワードの条件</div>
+                        <div class="requirement-item">8文字以上</div>
+                        <div class="requirement-item">英大文字・小文字を含む</div>
+                        <div class="requirement-item">数字を含む</div>
+                        <div class="requirement-item">記号を含む</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">新しいパスワード（確認）</label>
+                    <input type="password" class="form-input" placeholder="もう一度入力してください">
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn-save">パスワードを変更</button>
+                </div>
+
+                <h3 class="subsection-title">二段階認証</h3>
+                
+                <div class="form-group">
+                    <label class="form-label">認証アプリ</label>
+                    <div class="toggle-switch">
+                        <div class="switch">
+                            <div class="switch-handle"></div>
+                        </div>
+                        <span class="toggle-label">有効にする</span>
+                    </div>
+                    <div class="form-hint">Google Authenticatorなどのアプリを使用</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">SMS認証</label>
+                    <div class="toggle-switch">
+                        <div class="switch">
+                            <div class="switch-handle"></div>
+                        </div>
+                        <span class="toggle-label">有効にする</span>
+                    </div>
+                    <div class="form-hint">携帯電話番号へ認証コードを送信</div>
+                </div>
+
+                <h3 class="subsection-title">ログインセッション</h3>
+                
+                <div class="session-list">
+                    <div class="session-item">
+                        <div class="session-info">
+                            <div class="session-device">
+                                🖥️ Chrome on Windows
+                                <span class="session-current">現在のセッション</span>
+                            </div>
+                            <div class="session-details">
+                                東京, 日本 • 最終アクセス: 1分前
+                            </div>
+                        </div>
+                    </div>
+                    <div class="session-item">
+                        <div class="session-info">
+                            <div class="session-device">📱 Safari on iPhone</div>
+                            <div class="session-details">
+                                東京, 日本 • 最終アクセス: 2時間前
+                            </div>
+                        </div>
+                        <button class="btn-revoke">無効化</button>
+                    </div>
+                    <div class="session-item">
+                        <div class="session-info">
+                            <div class="session-device">💻 Firefox on macOS</div>
+                            <div class="session-details">
+                                大阪, 日本 • 最終アクセス: 3日前
+                            </div>
+                        </div>
+                        <button class="btn-revoke">無効化</button>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn-danger">すべてのセッションを無効化</button>
+                </div>
+
+                <div class="danger-zone">
+                    <div class="danger-title">⚠️ 危険な操作</div>
+                    <div class="danger-text">
+                        アカウントを削除すると、すべてのデータが完全に削除され、復元できなくなります。この操作は取り消せません。
+                    </div>
+                    <button class="btn-danger">アカウントを削除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
