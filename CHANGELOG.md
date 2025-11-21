@@ -7,12 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### ⚠️ Known Issues
+## [0.1.1] - 2025-11-21
 
-- **Caveman2 Routing**: Application fails to start due to `UNBOUND-VARIABLE *APP*` error in `defapp` macro
-  - Status: Under investigation
-  - Workaround: None yet
-  - Tracking: See PROGRESS.md for details
+### Fixed - Caveman2 Integration & Cache Management
+
+#### Caveman2 Routing and Application Definition
+- **Fixed defroute usage**: Changed from `(<app> "/path")` to `(*app* "/path")`
+  - Issue: `defroute` requires application instance, not class
+  - Solution: Import `*app*` instead of `<app>` in handler packages
+- **Fixed application class definition**: Replaced non-existent `defapp` macro
+  - Changed: `(defapp <app>)` → `(defclass <web> (<app>) ())`
+  - Changed: `(defparameter *app* ...)` → `(defvar *app* ...)`
+  - Added: `(clear-routing-rules *app*)` for clean routing state
+- **Resolved UNBOUND-VARIABLE error**: Fixed class inheritance issue
+  - Problem: `(defclass <app> (<app>) ())` created circular reference
+  - Solution: Use unique class name `<web>` inheriting from caveman2's `<app>`
+
+#### FASL Cache Management
+- **Project-local cache system**: No more `~/.cache` pollution
+  - Added `scripts/setup-cache.lisp` for automatic cache configuration
+  - Cache location: `_build/fasl/` (gitignored)
+  - Prevents stale FASL issues between code changes
+- **Cache cleanup script**: Safe, project-scoped cleanup
+  - Added `scripts/clean-cache.sh` with safety checks
+  - Automatic cache size reporting
+  - Confirmation prompt (override with `-y` flag)
+- **Developer convenience**: Easy server startup
+  - Added `start-server.lisp` for one-command development
+  - Automatically loads cache config before Quicklisp
+
+#### Database Permissions
+- **Fixed PostgreSQL schema access**: Granted `voro_user` proper permissions
+  - `GRANT ALL ON SCHEMA public TO voro_user`
+  - Required for Mito table creation
+
+### Verified - API Endpoints Working
+
+All authentication endpoints tested and operational:
+
+- ✅ `POST /api/auth/register` - User registration (HTTP 200)
+  ```json
+  {"success":true,"data":["user",["id",1,"username","testuser"]]}
+  ```
+- ✅ `POST /api/auth/login` - Authentication (HTTP 200)
+  ```json
+  {"success":true,"data":["user",["id",1,"username","testuser"]]}
+  ```
+- ✅ `POST /api/auth/login` - Invalid credentials (HTTP 401)
+  ```json
+  {"success":false,"error":"Invalid username or password"}
+  ```
+- ✅ `POST /api/auth/logout` - Session termination (HTTP 200)
+  ```json
+  {"success":true,"data":["message","Logged out successfully"]}
+  ```
+
+### Commits
+
+- `974b6a6` fix: Correct Caveman2 defroute usage to use *app* instance
+- `c610564` feat: Add project-local FASL cache management and fix Caveman2 app definition
 
 ## [0.1.0] - 2025-11-21
 
@@ -135,14 +188,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Development Notes
 
 ### Branch: feature/backend-foundation
-All Phase 1-3 work is on this feature branch. Ready for review once routing issue is resolved.
+All Phase 1-3 work is on this feature branch. All routing issues resolved and APIs verified working.
 
 ### Next Steps
-1. Resolve Caveman2 routing issue
-2. Complete application startup verification
-3. Test API endpoints with curl/Postman
+1. ~~Resolve Caveman2 routing issue~~ ✅
+2. ~~Complete application startup verification~~ ✅
+3. ~~Test API endpoints with curl/Postman~~ ✅
 4. Run test suite
-5. Merge to main after successful testing
+5. Review and merge PR to main
 
 ### Reference
 - Design Document: `docs/design/backend-foundation.md`
