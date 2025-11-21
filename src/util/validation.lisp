@@ -97,37 +97,52 @@
    - ドメイン部: 英数字、ドット、ハイフン
    - TLD: 最低2文字の英字
    - 長さ制限: 最大254文字（RFC 5321）
-   - NILの場合はスキップ（オプショナル項目）
+   - メールアドレスは必須項目
 
-   戻り値: メールアドレスが有効（またはNIL）ならT
+   戻り値: メールアドレスが有効ならT
    エラー: バリデーションエラーの場合は validation-error をシグナル"
 
-  (when email
-    ;; 長さチェック
-    (unless (<= (length email) 254)
-      (error 'validation-error
-             :message "Email address is too long (max 254 characters)"))
+  ;; NILチェック
+  (unless email
+    (error 'validation-error
+           :message "Email address is required"))
 
-    ;; 基本的な形式チェック
-    (unless (cl-ppcre:scan "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$" email)
-      (error 'validation-error
-             :message "Invalid email format"))
+  ;; 長さチェック
+  (unless (<= (length email) 254)
+    (error 'validation-error
+           :message "Email address is too long (max 254 characters)"))
 
-    ;; 追加チェック: 連続ドットの検出
-    (when (cl-ppcre:scan "\\.\\." email)
+  ;; @ の個数チェック（分割前に実行）
+  (let ((at-count (count #\@ email)))
+    (unless (= at-count 1)
       (error 'validation-error
-             :message "Email address cannot contain consecutive dots"))
+             :message "Email address must contain exactly one @ symbol")))
 
-    ;; 追加チェック: 先頭・末尾のドット
-    (when (or (char= (char email 0) #\.)
-              (char= (char email (1- (length email))) #\.))
+  ;; ローカル部とドメイン部に分割
+  (let* ((at-pos (position #\@ email))
+         (local-part (subseq email 0 at-pos))
+         (domain-part (subseq email (1+ at-pos))))
+
+    ;; ローカル部のバリデーション
+    ;; - 先頭・末尾がドットでないこと
+    ;; - 連続ドットがないこと
+    ;; - 許可された文字のみ
+    (unless (cl-ppcre:scan "^[a-zA-Z0-9._%+-]+$" local-part)
       (error 'validation-error
-             :message "Email address cannot start or end with a dot"))
+             :message "Invalid characters in email local part"))
 
-    ;; @ の個数チェック
-    (let ((at-count (count #\@ email)))
-      (unless (= at-count 1)
-        (error 'validation-error
-               :message "Email address must contain exactly one @ symbol")))
+    (when (or (char= (char local-part 0) #\.)
+              (char= (char local-part (1- (length local-part))) #\.))
+      (error 'validation-error
+             :message "Email local part cannot start or end with a dot"))
+
+    (when (cl-ppcre:scan "\\.\\." local-part)
+      (error 'validation-error
+             :message "Email local part cannot contain consecutive dots"))
+
+    ;; ドメイン部のバリデーション
+    (unless (cl-ppcre:scan "^[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$" domain-part)
+      (error 'validation-error
+             :message "Invalid email domain format"))
 
     t))

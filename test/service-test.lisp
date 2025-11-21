@@ -20,38 +20,38 @@
         (ok (string= (voro.model.user:user-username user) "testuser"))))
 
     (testing "重複ユーザー名でエラー"
-      (register-user "duplicate" "password123")
-      (ok (signals (register-user "duplicate" "password123")
+      (register-user "duplicate" "password123" :email "dup@example.com")
+      (ok (signals (register-user "duplicate" "password123" :email "dup2@example.com")
                    'voro.util.validation:validation-error)))
 
     (testing "パスワードが短すぎる場合エラー"
-      (ok (signals (register-user "newuser" "pass1")
+      (ok (signals (register-user "newuser" "pass1" :email "new@example.com")
                    'voro.util.validation:validation-error)))
 
     (testing "パスワードに数字が含まれない場合エラー"
-      (ok (signals (register-user "newuser" "password")
+      (ok (signals (register-user "newuser" "password" :email "new@example.com")
                    'voro.util.validation:validation-error)))
 
     (testing "パスワードに英字が含まれない場合エラー"
-      (ok (signals (register-user "newuser" "12345678")
+      (ok (signals (register-user "newuser" "12345678" :email "new@example.com")
                    'voro.util.validation:validation-error)))
 
     (testing "ユーザー名が短すぎる場合エラー"
-      (ok (signals (register-user "ab" "password123")
+      (ok (signals (register-user "ab" "password123" :email "new@example.com")
                    'voro.util.validation:validation-error)))
 
     (testing "ユーザー名が長すぎる場合エラー"
-      (ok (signals (register-user (make-string 51 :initial-element #\a) "password123")
+      (ok (signals (register-user (make-string 51 :initial-element #\a) "password123" :email "new@example.com")
                    'voro.util.validation:validation-error)))
 
     (testing "ユーザー名に不正な文字が含まれる場合エラー"
-      (ok (signals (register-user "user@name" "password123")
+      (ok (signals (register-user "user@name" "password123" :email "new@example.com")
                    'voro.util.validation:validation-error)))))
 
 (deftest test-authenticate-user
   (with-test-environment
     ;; テストユーザー作成
-    (register-user "logintest" "password123")
+    (register-user "logintest" "password123" :email "login@example.com")
 
     (testing "正しい認証情報でログイン成功"
       (multiple-value-bind (user session-id)
