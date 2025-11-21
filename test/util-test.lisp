@@ -55,8 +55,8 @@
     (ok (validate-email "user.name@example.co.jp"))
     (ok (validate-email "user+tag@example.com")))
 
-  (testing "NILは許可される（オプショナル項目）"
-    (ok (validate-email nil)))
+  (testing "NILは拒否される（必須項目）"
+    (ok (signals (validate-email nil) 'validation-error)))
 
   (testing "長すぎるメールアドレス（254文字超過）"
     (ok (signals (validate-email (format nil "~A@example.com" (make-string 245 :initial-element #\a)))

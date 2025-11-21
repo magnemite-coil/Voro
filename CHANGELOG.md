@@ -7,6 +7,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2025-11-22
+
+### Fixed - Email Validation & Test Suite
+
+#### Email Validation Improvements
+- **Email is now required**: Changed from optional to mandatory field
+  - Added NIL check in `validate-email` function
+  - Returns validation error if email is not provided
+  - Design decision: Reject OAuth registration if email cannot be obtained
+- **Stricter email validation**: Improved local part validation
+  - Split email into local and domain parts for separate validation
+  - Detects dots at start/end of local part (e.g., `user.@example.com`)
+  - Detects consecutive dots in local part (e.g., `user..name@example.com`)
+  - Fixed regex pattern to properly validate email structure
+
+#### Test Suite Fixes
+- **Updated test expectations**: Changed NIL handling test
+  - Before: `"NILは許可される（オプショナル項目）"` - Expected success
+  - After: `"NILは拒否される（必須項目）"` - Expected validation error
+- **Added email parameters**: Updated all service tests
+  - `test/service-test.lisp`: Added `:email` parameter to all `register-user` calls
+  - Ensures tests match new email requirement
+
+#### Development Process Improvements
+- **Git pre-commit hook**: Prevent direct commits to main branch
+  - Location: `.git/hooks/pre-commit`
+  - Blocks commits to `main` or `master` branches
+  - Provides helpful error message with branch naming examples
+  - Ensures all changes go through feature branches
+
+### Verified - Complete Test Suite Passing
+
+All tests executed successfully (2025-11-22):
+
+- ✅ **voro.test.util** - 32 test cases passed
+  - Password validation (5 cases)
+  - Username validation (11 cases)
+  - Email validation (12 cases) - Including new NIL rejection test
+  - Password hashing (4 cases)
+- ✅ **voro.test.model** - 7 test cases passed
+  - User creation and queries
+  - Username search
+  - Password verification
+- ✅ **voro.test.service** - 13 test cases passed
+  - User registration (success and error cases)
+  - User authentication (login success and failure)
+- ✅ **voro.test.handler** - 1 test case passed
+  - Placeholder test
+
+**Summary**: 4 test suites, 53 test cases, 0 failures
+
+#### Research: Google OAuth Email Availability
+
+Investigation into whether email addresses can always be obtained via Google OAuth:
+
+**Findings:**
+- Email scope (`https://www.googleapis.com/auth/userinfo.email`) is optional
+- Users or organizations can refuse to share email addresses
+- `userinfo` endpoint does not guarantee email will be returned
+- Even with `email` scope requested, email may not be available
+
+**Design Decision:**
+- Treat email as a required field for user registration
+- Reject OAuth-based registration if email cannot be obtained
+- This ensures all users have a valid email address for notifications
+
+### Commits
+
+- Branch: `fix/email-validation-required`
+- Hook implementation in `.git/hooks/pre-commit`
+
 ## [0.1.1] - 2025-11-21
 
 ### Fixed - Caveman2 Integration & Cache Management
@@ -194,8 +265,9 @@ All Phase 1-3 work is on this feature branch. All routing issues resolved and AP
 1. ~~Resolve Caveman2 routing issue~~ ✅
 2. ~~Complete application startup verification~~ ✅
 3. ~~Test API endpoints with curl/Postman~~ ✅
-4. Run test suite
-5. Review and merge PR to main
+4. ~~Run test suite~~ ✅ (2025-11-22)
+5. ~~Fix email validation issues~~ ✅ (2025-11-22)
+6. Review and merge PR to main
 
 ### Reference
 - Design Document: `docs/design/backend-foundation.md`
