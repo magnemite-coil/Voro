@@ -1,0 +1,56 @@
+# Git関連
+.git
+.gitignore
+.github
+
+# ドキュメント
+README.md
+CHANGELOG.md
+DEPLOYMENT.md
+docs/
+.claude/
+
+# ログ・一時ファイル
+*.log
+var/
+tmp/
+coverage-report/
+
+# FASL キャッシュ（ホスト側）
+*.fasl
+*.cfsl
+*.ufsl
+*.dfsl
+*.x86f
+*.lx64fsl
+*.fas
+
+# IDE設定
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS固有
+.DS_Store
+Thumbs.db
+
+# Node.js（フロントエンド）
+node_modules/
+.npm/
+frontend/node_modules/
+frontend/dist/
+
+# 環境変数（本番用）
+.env
+.env.local
+.env.production
+
+# Docker関連（ホスト側）
+docker-compose.yml
+docker-compose.override.yml
+Dockerfile
+
+# スクリプト（PoCなど）
+scripts/poc-*.lisp

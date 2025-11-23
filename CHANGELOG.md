@@ -7,6 +7,217 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2025-11-24
+
+### Added - 8-Layer Defense for Test Database Protection (Phase 2)
+
+#### 8-Layer Defense Implementation
+
+Comprehensive multi-layer validation system to prevent accidental production database access:
+
+**Layer 1: Environment Variable Enforcement**
+- Requires `APP_ENV=test` and `TEST_MODE=true`
+- Blocks test execution if environment variables are not set correctly
+
+**Layer 2: Explicit DB Name Specification**
+- Validates `voro.config:*app-env*` is "test"
+- Ensures config.lisp auto-switching works correctly
+
+**Layer 3: Whitelist Validation**
+- Only allows connection to `voro_test` database
+- Rejects any database not in whitelist
+
+**Layer 4: Blacklist Validation**
+- Explicitly blocks production/system databases: `voro`, `postgres`, `template0`, `template1`
+- Double protection against accidental production access
+
+**Layer 5: Post-Connection Re-verification**
+- Executes `SELECT current_database()` after connection
+- Validates actual connected database matches whitelist
+- Uses `dbi:prepare`, `dbi:execute`, `dbi:fetch` for reliable query execution
+
+**Layer 6: Table Existence Check**
+- Ensures test tables exist via `mito:ensure-table-exists`
+
+**Layer 7: Transaction Isolation**
+- `with-test-db` macro wraps tests in transactions
+- Each test runs in isolated transaction context
+
+**Layer 8: Guaranteed Rollback**
+- Always rolls back via `test-rollback-condition`
+- Ensures no data persists even on test success
+
+#### Test Fixtures System
+
+- **test/fixtures.lisp**: Comprehensive test data helpers
+  - `create-test-user`: Auto-incrementing unique usernames (testuser1, testuser2, ...)
+  - `create-test-users`: Bulk user creation
+  - `create-test-session`: Session fixture with automatic user creation
+  - Default values with keyword parameter overrides
+  - `*test-user-counter*` for unique username generation
+
+#### Transaction-Based Test Isolation
+
+- **with-test-db macro**: Transaction wrapper for tests
+  - Uses `dbi:with-transaction` with `mito.connection:*connection*`
+  - Automatically rolls back all database changes after test
+  - Works seamlessly with existing Mito ORM setup
+  - Verified with Phase0 PoC scripts
+
+#### Improved Test Data Cleanup
+
+- **Dynamic table cleanup**: Model-based approach
+  - Iterates through known Mito model classes
+  - Uses `mito.class:table-name` to get actual table names
+  - No hardcoded table names for better maintainability
+  - Graceful error handling for missing tables
+
+### Modified
+
+- **test/setup.lisp**: Enhanced with 8-layer defense
+  - `verify-test-database`: Multi-layer validation function
+  - `with-test-db`: Transaction-based test isolation macro
+  - `test-rollback-condition`: Custom condition for guaranteed rollback
+  - `cleanup-test-data`: Dynamic model-based cleanup
+  - Whitelist/blacklist parameters for database validation
+
+- **voro.asd**: Added test/fixtures.lisp to build system
+  - Proper dependency ordering (fixtures depends on setup)
+  - All test files now depend on fixtures
+
+### Verified - Complete 8-Layer Defense
+
+All tests passing with 8-layer defense active (2025-11-24):
+
+- ✅ **4/4 test suites successful**
+  - voro.test.util - 32 test cases
+  - voro.test.model - 7 test cases
+  - voro.test.service - 13 test cases
+  - voro.test.handler - 1 test case
+- ✅ **8-layer defense operational**
+  - All layers verify correctly
+  - Production database access blocked
+  - Whitelist/blacklist validation working
+  - Transaction isolation confirmed
+- ✅ **Test fixtures functional**
+  - Auto-incrementing usernames working
+  - Session creation successful
+  - Default value overrides working
+
+### Benefits
+
+- **Production Safety**: Multiple layers prevent accidental production DB access
+- **No Single Point of Failure**: Each layer provides independent protection
+- **Fast Tests**: Transaction-based isolation (no TRUNCATE needed per test)
+- **Data Isolation**: Tests can run in parallel without interference
+- **Maintainability**: Dynamic model-based cleanup reduces maintenance burden
+
+### Commits
+
+- Branch: `feature/phase0-poc-verification`
+- `41743b4` feat: Implement Phase2 8-layer defense for test database protection
+
+### Next Steps (Remaining Phases)
+
+- **Phase 3**: HTTP integration test framework
+  - `test/http-helper.lisp` for endpoint testing
+  - Handler layer coverage target: 70%+
+  - Dexador-based real HTTP requests
+- **Phase 4**: CI/CD integration
+  - GitHub Actions workflow
+  - Automated testing on push/PR
+- **Phase 5**: Documentation
+  - Testing guide
+  - Troubleshooting documentation
+
+## [0.1.3] - 2025-11-24
+
+### Added - Docker Test Infrastructure (Phase 0-1)
+
+#### Phase 0: PoC Verification
+- **Transaction Testing**: Mito transaction rollback verification
+  - `scripts/poc-transaction-test.lisp` - Validates rollback behavior
+  - Confirms test data isolation through transactions
+- **HTTP Server Testing**: Caveman2 server lifecycle verification
+  - `scripts/poc-http-server-test.lisp` - Server start/stop/health check
+  - Validates server control for integration tests
+
+#### Phase 1: Docker Test Environment
+- **Dockerfile.test**: SBCL-based test container
+  - Official SBCL image (2.2.4) with Quicklisp
+  - Pre-loaded dependencies (Caveman2, Mito, cl-redis, Rove, Dexador)
+  - UID/GID matching for macOS/Linux compatibility
+  - Non-root user execution for security
+- **docker-compose.test.yml**: Multi-container test orchestration
+  - PostgreSQL 15 (alpine) with health checks
+  - Redis 7 (alpine) with health checks
+  - Test runner with dependency wait conditions
+  - Environment variable configuration (APP_ENV=test, TEST_DB_*, TEST_REDIS_DB=1)
+  - Quicklisp cache volume (`sbcl-cache`) for faster builds
+- **Test Automation**: Makefile with common commands
+  - `make test` - Run all tests in Docker
+  - `make clean` - Clean up Docker resources
+  - `make shell-test` - Debug shell in test container
+  - `make logs` - View test runner logs
+- **Database Initialization**: `scripts/init-test-db.sql`
+  - User permissions (GRANT ALL ON SCHEMA public)
+  - Default privileges for future tables/sequences
+  - UTC timezone configuration
+- **Test Execution**: `scripts/run-tests.sh`
+  - Environment validation (APP_ENV=test, TEST_MODE=true)
+  - Database/Redis connection wait logic
+  - SBCL test execution with proper exit codes
+
+### Fixed
+- **.gitignore**: Allow `Dockerfile.test` to be tracked
+  - Added `!Dockerfile.test` exception to `*.test` ignore pattern
+  - Ensures Docker configuration is version controlled
+
+### Verified - Docker Test Suite
+
+All tests passing in Docker environment (2025-11-24):
+
+- ✅ **4/4 test suites successful**
+  - voro.test.util - 32 test cases
+  - voro.test.model - 7 test cases
+  - voro.test.service - 13 test cases
+  - voro.test.handler - 1 test case
+- ✅ **PostgreSQL connection**: test-db:5432/voro_test
+- ✅ **Redis connection**: test-redis:6379 DB 1
+- ✅ **Health checks**: Working correctly
+- ✅ **Data cleanup**: Automatic TRUNCATE CASCADE
+- ✅ **Quicklisp cache**: Persistent across runs
+
+### Performance
+- Docker build time: ~85 seconds (with dependency caching)
+- Test execution time: ~40 seconds (including container startup)
+- Subsequent runs: Faster due to cached layers and Quicklisp volume
+
+### Infrastructure Improvements
+- Environment reproducibility through Docker
+- Isolation from host system dependencies
+- Consistent test results across development machines
+- Foundation for CI/CD integration (Phase 4)
+
+### Commits
+- Branch: `feature/phase0-poc-verification`
+- `a5f7eb1` feat: Implement Phase1 Docker test infrastructure
+
+### Next Steps (Remaining Phases)
+- **Phase 2**: Test setup enhancement (8-layer defense)
+  - Production database protection
+  - Transaction-based test isolation
+  - `with-test-db` macro for automatic rollback
+- **Phase 3**: HTTP integration test framework
+  - `test/http-helper.lisp` for endpoint testing
+  - Handler layer coverage target: 70%+
+- **Phase 4**: CI/CD integration
+  - GitHub Actions workflow
+  - Automated testing on push/PR
+- **Phase 5**: Documentation
+  - Testing guide
+  - Troubleshooting documentation
+
 ## [0.1.2] - 2025-11-22
 
 ### Fixed - Email Validation & Test Suite

@@ -87,13 +87,14 @@
   :in-order-to ((test-op (test-op "voro/test"))))
 
 (defsystem "voro/test"
-  :depends-on ("voro" "rove")
+  :depends-on ("voro" "rove" "dexador")
   :components (
     (:module "test"
      :components (
        (:file "setup")
+       (:file "fixtures" :depends-on ("setup"))
        (:file "util-test" :depends-on ("setup"))
-       (:file "model-test" :depends-on ("setup"))
-       (:file "service-test" :depends-on ("setup"))
-       (:file "handler-test" :depends-on ("setup")))))
+       (:file "model-test" :depends-on ("setup" "fixtures"))
+       (:file "service-test" :depends-on ("setup" "fixtures"))
+       (:file "handler-test" :depends-on ("setup" "fixtures")))))
   :perform (test-op (o c) (symbol-call :rove :run c)))
