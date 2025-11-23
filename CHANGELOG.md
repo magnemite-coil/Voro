@@ -7,6 +7,94 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2025-11-24
+
+### Added - Docker Test Infrastructure (Phase 0-1)
+
+#### Phase 0: PoC Verification
+- **Transaction Testing**: Mito transaction rollback verification
+  - `scripts/poc-transaction-test.lisp` - Validates rollback behavior
+  - Confirms test data isolation through transactions
+- **HTTP Server Testing**: Caveman2 server lifecycle verification
+  - `scripts/poc-http-server-test.lisp` - Server start/stop/health check
+  - Validates server control for integration tests
+
+#### Phase 1: Docker Test Environment
+- **Dockerfile.test**: SBCL-based test container
+  - Official SBCL image (2.2.4) with Quicklisp
+  - Pre-loaded dependencies (Caveman2, Mito, cl-redis, Rove, Dexador)
+  - UID/GID matching for macOS/Linux compatibility
+  - Non-root user execution for security
+- **docker-compose.test.yml**: Multi-container test orchestration
+  - PostgreSQL 15 (alpine) with health checks
+  - Redis 7 (alpine) with health checks
+  - Test runner with dependency wait conditions
+  - Environment variable configuration (APP_ENV=test, TEST_DB_*, TEST_REDIS_DB=1)
+  - Quicklisp cache volume (`sbcl-cache`) for faster builds
+- **Test Automation**: Makefile with common commands
+  - `make test` - Run all tests in Docker
+  - `make clean` - Clean up Docker resources
+  - `make shell-test` - Debug shell in test container
+  - `make logs` - View test runner logs
+- **Database Initialization**: `scripts/init-test-db.sql`
+  - User permissions (GRANT ALL ON SCHEMA public)
+  - Default privileges for future tables/sequences
+  - UTC timezone configuration
+- **Test Execution**: `scripts/run-tests.sh`
+  - Environment validation (APP_ENV=test, TEST_MODE=true)
+  - Database/Redis connection wait logic
+  - SBCL test execution with proper exit codes
+
+### Fixed
+- **.gitignore**: Allow `Dockerfile.test` to be tracked
+  - Added `!Dockerfile.test` exception to `*.test` ignore pattern
+  - Ensures Docker configuration is version controlled
+
+### Verified - Docker Test Suite
+
+All tests passing in Docker environment (2025-11-24):
+
+- ✅ **4/4 test suites successful**
+  - voro.test.util - 32 test cases
+  - voro.test.model - 7 test cases
+  - voro.test.service - 13 test cases
+  - voro.test.handler - 1 test case
+- ✅ **PostgreSQL connection**: test-db:5432/voro_test
+- ✅ **Redis connection**: test-redis:6379 DB 1
+- ✅ **Health checks**: Working correctly
+- ✅ **Data cleanup**: Automatic TRUNCATE CASCADE
+- ✅ **Quicklisp cache**: Persistent across runs
+
+### Performance
+- Docker build time: ~85 seconds (with dependency caching)
+- Test execution time: ~40 seconds (including container startup)
+- Subsequent runs: Faster due to cached layers and Quicklisp volume
+
+### Infrastructure Improvements
+- Environment reproducibility through Docker
+- Isolation from host system dependencies
+- Consistent test results across development machines
+- Foundation for CI/CD integration (Phase 4)
+
+### Commits
+- Branch: `feature/phase0-poc-verification`
+- `a5f7eb1` feat: Implement Phase1 Docker test infrastructure
+
+### Next Steps (Remaining Phases)
+- **Phase 2**: Test setup enhancement (8-layer defense)
+  - Production database protection
+  - Transaction-based test isolation
+  - `with-test-db` macro for automatic rollback
+- **Phase 3**: HTTP integration test framework
+  - `test/http-helper.lisp` for endpoint testing
+  - Handler layer coverage target: 70%+
+- **Phase 4**: CI/CD integration
+  - GitHub Actions workflow
+  - Automated testing on push/PR
+- **Phase 5**: Documentation
+  - Testing guide
+  - Troubleshooting documentation
+
 ## [0.1.2] - 2025-11-22
 
 ### Fixed - Email Validation & Test Suite
