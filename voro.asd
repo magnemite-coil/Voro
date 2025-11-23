@@ -87,7 +87,7 @@
   :in-order-to ((test-op (test-op "voro/test"))))
 
 (defsystem "voro/test"
-  :depends-on ("voro" "rove")
+  :depends-on ("voro" "rove" "dexador")
   :components (
     (:module "test"
      :components (

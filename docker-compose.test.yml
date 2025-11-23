@@ -1,0 +1,84 @@
+version: '3.9'
+
+services:
+  # PostgreSQL テストDB
+  test-db:
+    image: postgres:15-alpine
+    container_name: voro-test-db
+    environment:
+      POSTGRES_DB: voro_test
+      POSTGRES_USER: voro_test_user
+      POSTGRES_PASSWORD: voro_test_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U voro_test_user -d voro_test"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - ./scripts/init-test-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - voro-test-network
+
+  # Redis テストセッションストア
+  test-redis:
+    image: redis:7-alpine
+    container_name: voro-test-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+    networks:
+      - voro-test-network
+
+  # テスト実行コンテナ
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        HOST_UID: ${HOST_UID:-1000}
+        HOST_GID: ${HOST_GID:-1000}
+    container_name: voro-test-runner
+    depends_on:
+      test-db:
+        condition: service_healthy
+      test-redis:
+        condition: service_healthy
+    environment:
+      # テスト環境識別
+      APP_ENV: test
+      TEST_MODE: "true"
+
+      # PostgreSQL接続設定
+      DB_HOST: test-db
+      DB_PORT: 5432
+      TEST_DB_NAME: voro_test
+      TEST_DB_USER: voro_test_user
+      TEST_DB_PASSWORD: voro_test_password
+
+      # Redis接続設定
+      REDIS_HOST: test-redis
+      REDIS_PORT: 6379
+      TEST_REDIS_DB: 1  # テスト環境はDB 1（本番はDB 0）
+
+      # ログ設定
+      LOG_LEVEL: debug
+    volumes:
+      # ソースコード（読み取り専用）
+      - ./src:/app/src:ro
+      - ./test:/app/test:ro
+      - ./voro.asd:/app/voro.asd:ro
+
+      # Quicklispキャッシュ（永続化）
+      - sbcl-cache:/home/lispuser/quicklisp
+    networks:
+      - voro-test-network
+
+volumes:
+  sbcl-cache:
+    name: voro-sbcl-cache
+
+networks:
+  voro-test-network:
+    name: voro-test-network

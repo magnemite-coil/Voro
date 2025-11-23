@@ -40,6 +40,7 @@ docs/design/
 var/
 /tmp/
 *.test
+!Dockerfile.test
 *.spec
 
 # Development - Test outputs and temporary files

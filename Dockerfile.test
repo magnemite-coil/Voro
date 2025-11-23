@@ -1,0 +1,56 @@
+# ベースイメージ: SBCL公式イメージ
+FROM clfoundation/sbcl:latest
+
+# 必須パッケージインストール
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    ca-certificates \
+    libev-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Quicklispセットアップ（ビルド時）
+RUN curl -O https://beta.quicklisp.org/quicklisp.lisp && \
+    sbcl --non-interactive \
+         --load quicklisp.lisp \
+         --eval "(quicklisp-quickstart:install :path \"/root/quicklisp/\")" && \
+    echo '(load "/root/quicklisp/setup.lisp")' > /root/.sbclrc && \
+    rm quicklisp.lisp
+
+# 非rootユーザー作成（セキュリティベストプラクティス）
+# HOST_UID/HOST_GIDを引数で受け取り、ホストとUID/GIDを一致させる（Linux環境での権限問題を回避）
+ARG HOST_UID=1000
+ARG HOST_GID=1000
+RUN (groupadd -g ${HOST_GID} lispuser 2>/dev/null || groupmod -n lispuser $(getent group ${HOST_GID} | cut -d: -f1)) && \
+    useradd -m -u ${HOST_UID} -g ${HOST_GID} -s /bin/bash lispuser && \
+    mkdir -p /home/lispuser/quicklisp && \
+    cp -r /root/quicklisp/* /home/lispuser/quicklisp/ && \
+    echo '(load "/home/lispuser/quicklisp/setup.lisp")' > /home/lispuser/.sbclrc && \
+    chown -R lispuser:lispuser /home/lispuser
+
+# 作業ディレクトリ
+WORKDIR /app
+RUN chown lispuser:lispuser /app
+
+# lispuserに切り替え
+USER lispuser
+
+# 依存関係を事前ロード（キャッシュレイヤー）
+# 一般的な依存関係のみロード（プロジェクト固有のコードは実行時にロード）
+RUN sbcl --non-interactive \
+         --eval "(ql:quickload :caveman2 :silent t)" \
+         --eval "(ql:quickload :mito :silent t)" \
+         --eval "(ql:quickload :cl-redis :silent t)" \
+         --eval "(ql:quickload :rove :silent t)" \
+         --eval "(ql:quickload :dexador :silent t)" \
+         --eval "(quit)"
+
+# ソースコードはvolumeマウント（コピーしない）
+# - ./src:/app/src:ro
+# - ./test:/app/test:ro
+
+# デフォルトコマンド
+CMD ["sbcl", "--non-interactive", \
+     "--eval", "(push #P\"/app/\" asdf:*central-registry*)", \
+     "--eval", "(ql:quickload :voro/test :silent t)", \
+     "--eval", "(asdf:test-system :voro/test)"]
