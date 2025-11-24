@@ -25,21 +25,17 @@
   "リクエストボディからパラメータを取得"
   (cdr (assoc key (lack.request:request-body-parameters *request*) :test #'string=)))
 
-(defun set-session-cookie (session-id)
-  "セッションCookieを設定"
-  (setf (lack.response:response-headers *response*)
-        (append (lack.response:response-headers *response*)
-                (list :set-cookie
-                      (format nil "session_id=~A; Path=/; HttpOnly; SameSite=Strict; Max-Age=~D"
-                              session-id
-                              *session-ttl*)))))
+(defun make-session-cookie-header (session-id)
+  "セッションCookie用のヘッダーを生成"
+  (list :set-cookie
+        (format nil "session_id=~A; Path=/; HttpOnly; SameSite=Strict; Max-Age=~D"
+                session-id
+                *session-ttl*)))
 
-(defun clear-session-cookie ()
-  "セッションCookieをクリア"
-  (setf (lack.response:response-headers *response*)
-        (append (lack.response:response-headers *response*)
-                (list :set-cookie
-                      "session_id=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0"))))
+(defun make-clear-cookie-header ()
+  "セッションCookie削除用のヘッダーを生成"
+  (list :set-cookie
+        "session_id=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0"))
 
 ;;; ルート定義
 
@@ -58,13 +54,11 @@
             (multiple-value-bind (user session-id)
                 (register-user username password :email email)
 
-              ;; セッションCookieを設定
-              (set-session-cookie session-id)
-
-              ;; 成功レスポンス
+              ;; 成功レスポンス（セッションCookie付き）
               (response-success
-               (list :|user| (list :|id| (voro.model.user:user-id user)
-                                   :|username| (voro.model.user:user-username user)))))
+               (list (cons :|user| (list (cons :|id| (voro.model.user:user-id user))
+                                         (cons :|username| (voro.model.user:user-username user)))))
+               :headers (make-session-cookie-header session-id)))
 
           ;; バリデーションエラー（ユーザー向けメッセージをそのまま返す）
           (validation-error (e)
@@ -89,14 +83,11 @@
             (authenticate-user username password)
 
           (if user
-              (progn
-                ;; セッションCookieを設定
-                (set-session-cookie session-id)
-
-                ;; 成功レスポンス
-                (response-success
-                 (list :|user| (list :|id| (voro.model.user:user-id user)
-                                     :|username| (voro.model.user:user-username user)))))
+              ;; 成功レスポンス（セッションCookie付き）
+              (response-success
+               (list (cons :|user| (list (cons :|id| (voro.model.user:user-id user))
+                                         (cons :|username| (voro.model.user:user-username user)))))
+               :headers (make-session-cookie-header session-id))
 
               ;; 認証失敗
               (response-error 401 "Invalid username or password"))))))
@@ -109,8 +100,6 @@
     (when session-id
       (logout-user session-id))
 
-    ;; セッションCookieをクリア
-    (clear-session-cookie)
-
-    ;; 成功レスポンス
-    (response-success (list :|message| "Logged out successfully"))))
+    ;; 成功レスポンス（Cookie削除ヘッダー付き）
+    (response-success (list (cons :|message| "Logged out successfully"))
+                     :headers (make-clear-cookie-header))))

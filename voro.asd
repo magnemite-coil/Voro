@@ -93,8 +93,13 @@
      :components (
        (:file "setup")
        (:file "fixtures" :depends-on ("setup"))
+       (:file "http-helper" :depends-on ("setup"))
        (:file "util-test" :depends-on ("setup"))
        (:file "model-test" :depends-on ("setup" "fixtures"))
        (:file "service-test" :depends-on ("setup" "fixtures"))
-       (:file "handler-test" :depends-on ("setup" "fixtures")))))
+       (:file "handler-test" :depends-on ("setup" "fixtures"))
+       (:module "handler"
+        :depends-on ("setup" "fixtures" "http-helper")
+        :components (
+          (:file "auth-test"))))))
   :perform (test-op (o c) (symbol-call :rove :run c)))
