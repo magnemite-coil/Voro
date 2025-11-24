@@ -118,8 +118,8 @@
       (with-test-server
         (with-test-db
           (let ((response (http-post \"/api/auth/register\"
-                                     :json '((\"username\" . \"testuser\")
-                                             (\"password\" . \"password123\")))))
+                                     :json '((:|username| . \"testuser\")
+                                             (:|password| . \"password123\")))))
             (assert-status 200 response)
             (assert-json-response response '(\"user\" \"id\"))))))"
 
@@ -134,16 +134,16 @@
 ;;; HTTPリクエストヘルパー
 ;;;
 
-(defun plist-to-hash-table (plist)
-  "Plist形式のデータをハッシュテーブルに変換（Jonathan用）
+(defun alist-to-hash-table (alist)
+  "Alist形式のデータをハッシュテーブルに変換（Jonathan用）
 
-  Jonathan の :from :plist オプションにバグがあるため、
+  Jonathan の :from :alist オプションにバグがあるため、
   明示的にハッシュテーブルに変換してからJSONエンコードする。
 
-  例: (list :|username| \"user\" :|password| \"pass\")
+  例: '((:|username| . \"user\") (:|password| . \"pass\"))
       => #<HASH-TABLE :TEST EQUAL \"username\" \"user\" \"password\" \"pass\">"
   (let ((hash-table (make-hash-table :test 'equal)))
-    (loop for (key value) on plist by #'cddr
+    (loop for (key . value) in alist
           do (setf (gethash (string-downcase (symbol-name key)) hash-table)
                    value))
     hash-table))
@@ -166,14 +166,15 @@
   "HTTP POSTリクエストを送信
 
   引数:
-    json: Plist形式のJSONデータ（キーワードシンボル使用）
+    json: Alist形式のJSONデータ（キーワードシンボル使用）
+          例: '((:|username| . \"user\") (:|password| . \"pass\"))
 
   戻り値: (values body status headers)"
   (handler-case
       (multiple-value-bind (body status response-headers)
           (dex:post (format nil "~A~A" *test-server-base-url* path)
                     :content (when json
-                              (jonathan:to-json (plist-to-hash-table json)))
+                              (jonathan:to-json (alist-to-hash-table json)))
                     :headers (append '(("Content-Type" . "application/json"))
                                    headers
                                    (make-cookie-header cookies)))
@@ -188,14 +189,15 @@
   "HTTP PUTリクエストを送信
 
   引数:
-    json: Plist形式のJSONデータ（キーワードシンボル使用）
+    json: Alist形式のJSONデータ（キーワードシンボル使用）
+          例: '((:|username| . \"user\") (:|password| . \"pass\"))
 
   戻り値: (values body status headers)"
   (handler-case
       (multiple-value-bind (body status response-headers)
           (dex:put (format nil "~A~A" *test-server-base-url* path)
                    :content (when json
-                             (jonathan:to-json (plist-to-hash-table json)))
+                             (jonathan:to-json (alist-to-hash-table json)))
                    :headers (append '(("Content-Type" . "application/json"))
                                   headers
                                   (make-cookie-header cookies)))
@@ -301,9 +303,9 @@
         (assert-status 200 response)))"
 
   `(let* ((register-response (http-post "/api/auth/register"
-                                        :json (list :|username| ,username
-                                                   :|password| ,password
-                                                   :|email| ,(or email (format nil "~A@example.com" username)))))
+                                        :json (list (cons :|username| ,username)
+                                                   (cons :|password| ,password)
+                                                   (cons :|email| ,(or email (format nil "~A@example.com" username))))))
           (session-id (extract-session-cookie (third register-response)))
           (session-cookies (list (cons "session_id" session-id))))
      ,@body))

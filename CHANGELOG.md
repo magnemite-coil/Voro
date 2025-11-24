@@ -7,6 +7,89 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7] - 2025-11-25
+
+### Added - Comprehensive Testing Documentation (Phase 5)
+
+#### Testing Documentation Suite
+- **docs/testing/README.md**: Test execution quick start guide
+  - Quick start for running tests with Docker
+  - Test suite overview (62 test cases across 5 suites)
+  - 8-layer defense system explanation
+  - Coverage goals by layer (Util: 90%+, Model/Service: 80%+, Handler: 70%+)
+  - Development workflow and troubleshooting tips
+
+- **docs/testing/backend-guide.md**: Comprehensive backend test development guide
+  - Test writing patterns for each layer (Util/Model/Service/Handler)
+  - HTTP integration testing with http-helper
+  - Test fixtures usage (create-test-user, create-test-session)
+  - Best practices (Arrange-Act-Assert pattern, test independence)
+  - Common testing patterns and anti-patterns
+  - Debugging tips with REPL and log output
+
+- **docs/testing/troubleshooting.md**: Troubleshooting guide
+  - Environment issues (Docker, Quicklisp, environment variables)
+  - Database issues (8-layer defense, connection errors, transaction rollback)
+  - Redis connection problems
+  - HTTP integration test debugging
+  - Performance optimization tips
+  - Comprehensive debugging techniques
+
+#### Documentation Benefits
+- Clear testing strategy for new contributors
+- Reduced onboarding time with practical examples
+- Troubleshooting guide for common issues
+
+## [0.1.6] - 2025-11-25
+
+### Added - CI/CD Integration (Phase 4)
+
+#### GitHub Actions Workflow
+- **.github/workflows/ci-backend.yml**: Automated testing pipeline
+  - **Service Containers**: PostgreSQL 15 and Redis 7 with health checks
+  - **SBCL Installation**: Automated Common Lisp environment setup
+  - **Quicklisp Management**: Dependency installation with caching
+  - **Multi-layer Caching Strategy**:
+    - SBCL binaries (`/usr/local/bin/sbcl`, `/usr/local/lib/sbcl`)
+    - Quicklisp libraries (`~/quicklisp`)
+    - Compiled FASL files (`~/.cache/common-lisp`)
+    - Cache key includes `voro.asd` hash for invalidation
+  - **Timeout Protection**: 10 minutes for Quicklisp, 15 minutes for tests
+  - **Test Result Artifacts**: Failed test logs uploaded for debugging
+  - **Trigger Events**: Pull requests and pushes to main branch
+
+#### CI/CD Benefits
+- Automated test execution on every PR
+- Fast feedback with comprehensive caching
+- Test result preservation for debugging
+- Prevents merging broken code to main branch
+
+### Added - Git Ignore Protection (Security Enhancement)
+
+#### Pre-commit Hook Enhancement
+- **.git/hooks/pre-commit**: Enhanced with .gitignore violation detection
+  - Check 1: Prevent direct commits to main/master branch
+  - Check 2: Prevent committing .gitignore violations
+    - Dynamic verification with `git check-ignore`
+    - Explicit pattern matching for critical files
+    - Detailed error messages with remediation steps
+
+#### Claude Code Tool Hook Enhancement
+- **.claude/hooks/tool-call.sh**: Block git add -f for ignored files
+  - Detects `git add -f` commands targeting ignored patterns
+  - Prevents accidental commits of:
+    - `.claude/` - Claude Code configuration
+    - `CLAUDE.md`, `PROGRESS.md` - Project-specific documentation
+    - `docs/design/` - Design documents (may contain security info)
+    - `*.fasl`, `*.log`, `*.env` - Generated/temporary files
+  - Clear error messages explaining why files are ignored
+
+#### Protection Benefits
+- Multi-layer defense against .gitignore violations
+- Prevents leaking sensitive design documents
+- Protects project-specific configuration from being committed
+- Claude Code self-enforcement of repository rules
+
 ## [0.1.5] - 2025-11-25
 
 ### Added - HTTP Integration Test Infrastructure (Phase 3)
