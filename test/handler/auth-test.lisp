@@ -30,8 +30,8 @@
             (assert-status 200 status)
 
             ;; JSONレスポンス確認
-            (assert-json-response body "user" "id")
-            (assert-json-response body "user" "username")
+            (assert-json-response body "data" "user" "id")
+            (assert-json-response body "data" "user" "username")
 
             ;; セッションCookie確認
             (assert-cookie "session_id" headers)))))))
@@ -108,7 +108,7 @@
                                    :|password| "password123"))
 
             (assert-status 200 status)
-            (assert-json-response body "user" "username")
+            (assert-json-response body "data" "user" "username")
             (assert-cookie "session_id" headers)))))))
 
 (deftest auth-login-invalid-username-test
@@ -189,10 +189,13 @@
               (http-post "/api/auth/logout")
 
             (assert-status 200 status)
-            (assert-json-response body "message")
+            (assert-json-response body "data" "message")
 
             ;; Cookie削除確認（Max-Age=0）
-            (let ((set-cookie (or (gethash "set-cookie" headers)
-                                  (gethash "Set-Cookie" headers))))
+            (let* ((set-cookie-raw (or (gethash "set-cookie" headers)
+                                       (gethash "Set-Cookie" headers)))
+                   (set-cookie (if (listp set-cookie-raw)
+                                   (first set-cookie-raw)
+                                   set-cookie-raw)))
               (ok (and set-cookie (search "Max-Age=0" set-cookie))
                   "Session cookie cleared with Max-Age=0"))))))))

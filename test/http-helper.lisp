@@ -159,7 +159,7 @@
       (multiple-value-bind (body status response-headers)
           (dex:post (format nil "~A~A" *test-server-base-url* path)
                     :content (when json
-                              (jonathan:to-json json))
+                              (jonathan:to-json json :from :plist))
                     :headers (append '(("Content-Type" . "application/json"))
                                    headers
                                    (make-cookie-header cookies)))
@@ -181,7 +181,7 @@
       (multiple-value-bind (body status response-headers)
           (dex:put (format nil "~A~A" *test-server-base-url* path)
                    :content (when json
-                             (jonathan:to-json json))
+                             (jonathan:to-json json :from :plist))
                    :headers (append '(("Content-Type" . "application/json"))
                                   headers
                                   (make-cookie-header cookies)))
@@ -242,18 +242,35 @@
   使用例:
     (assert-json-response body \"user\" \"id\")
     ; => body[\"user\"][\"id\"] が存在することを確認"
-  (let* ((parsed (jonathan:parse body))
-         (result (loop for key in keys
-                      for key-symbol = (intern (string-upcase key) :keyword)
-                      for value = parsed then (getf value key-symbol)
-                      finally (return value))))
+  (format t "~&[DEBUG] Response body: ~A~%" body)
+  (let* ((parsed (jonathan:parse body :as :hash-table))
+         (result (reduce (lambda (hash-table key)
+                          (let ((key-str (string-downcase (string key))))
+                            (format t "~&[DEBUG] key=~A, key-str=~A, current-value=~A~%"
+                                    key key-str hash-table)
+                            (when hash-table
+                              (gethash key-str hash-table))))
+                        keys
+                        :initial-value parsed)))
+    (format t "~&[DEBUG] Final result: ~A~%" result)
     (ok (not (null result))
         (format nil "Key path ~{~A~^.~} exists in JSON response" keys))))
 
 (defun assert-cookie (name headers)
   "Set-CookieヘッダーでCookieが設定されているか検証"
-  (let ((set-cookie (or (gethash "set-cookie" headers)
-                        (gethash "Set-Cookie" headers))))
+  (format t "~&[DEBUG] Headers type: ~A~%" (type-of headers))
+  (format t "~&[DEBUG] All headers:~%")
+  (loop for key being the hash-keys of headers
+        for value being the hash-values of headers
+        do (format t "~&  ~A: ~A~%" key value))
+  (let* ((set-cookie-raw (or (gethash "set-cookie" headers)
+                             (gethash "Set-Cookie" headers)
+                             (gethash :set-cookie headers)))
+         ;; set-cookieの値がリストの場合は最初の要素を取得
+         (set-cookie (if (listp set-cookie-raw)
+                         (first set-cookie-raw)
+                         set-cookie-raw)))
+    (format t "~&[DEBUG] Set-Cookie header: ~A~%" set-cookie)
     (ok (and set-cookie (search name set-cookie))
         (format nil "Cookie '~A' is set" name))))
 
@@ -261,17 +278,18 @@
 ;;; 認証ヘルパー
 ;;;
 
-(defmacro with-authenticated-user ((username password) &body body)
+(defmacro with-authenticated-user ((username password &optional email) &body body)
   "認証済みユーザーでテストを実行
 
   使用例:
-    (with-authenticated-user (\"testuser\" \"password123\")
+    (with-authenticated-user (\"testuser\" \"password123\" \"test@example.com\")
       (let ((response (http-get \"/api/posts\" :cookies session-cookies)))
         (assert-status 200 response)))"
 
   `(let* ((register-response (http-post "/api/auth/register"
                                         :json (list :|username| ,username
-                                                   :|password| ,password)))
+                                                   :|password| ,password
+                                                   :|email| ,(or email (format nil "~A@example.com" username)))))
           (session-id (extract-session-cookie (third register-response)))
           (session-cookies (list (cons "session_id" session-id))))
      ,@body))
