@@ -7,6 +7,133 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2025-11-25
+
+### Added - HTTP Integration Test Infrastructure (Phase 3)
+
+#### HTTP Test Helper System
+- **test/http-helper.lisp**: Comprehensive HTTP testing utilities
+  - **Server Management**: `start-test-server`, `stop-test-server`, `wait-for-server-ready`
+    - Clack/Woo integration with proper lifecycle management
+    - Health check with retry logic (404-tolerant for undefined routes)
+    - Automatic cleanup with `with-test-server` macro
+  - **HTTP Request Helpers**: `http-post`, `http-get`, `http-put`, `http-delete`
+    - Dexador-based real HTTP requests
+    - JSON request body support with Jonathan encoding
+    - Cookie management with `make-cookie-header`
+    - Automatic error handling for 4xx/5xx responses
+  - **Response Validation**: `assert-status`, `assert-json-response`, `assert-cookie`
+    - Status code verification
+    - Nested JSON path validation with hash-table traversal
+    - Cookie header inspection (list-wrapped values supported)
+  - **Authentication Helper**: `with-authenticated-user` macro
+    - Automatic user registration and session cookie extraction
+    - Simplifies authenticated endpoint testing
+
+#### Authentication API Tests
+- **test/handler/auth-test.lisp**: 9 comprehensive test cases
+  - **Registration Tests** (4 cases):
+    - Success with session cookie validation
+    - Missing username error (400)
+    - Missing password error (400)
+    - Duplicate username error (400)
+  - **Login Tests** (4 cases):
+    - Success with cookie and JSON validation
+    - Invalid username error (401)
+    - Invalid password error (401)
+    - Missing field errors (400)
+  - **Logout Test** (1 case):
+    - Success with Max-Age=0 cookie verification
+
+### Fixed - Jonathan Encoding and Set-Cookie Header Issues
+
+#### Jonathan JSON Encoding
+- **Problem**: Type errors when encoding plist data
+  - `TYPE-ERROR: The value "testuser" is not of type LIST`
+  - Jonathan expected `:from :plist` option for plist data
+- **Solution**: Added `:from :plist` to `jonathan:to-json` calls
+  - `test/http-helper.lisp`: Updated `http-post` and `http-put` (lines 162, 184)
+  - Proper plist encoding for test request bodies
+
+#### JSON Response Parsing
+- **Problem**: `assert-json-response` failed to traverse nested JSON
+  - Loop-based approach didn't handle nested hash-tables correctly
+- **Solution**: Refactored to use `reduce` with `gethash`
+  - Changed `:as :plist` to `:as :hash-table` for Jonathan parsing
+  - Recursive hash-table traversal for key path validation
+  - Properly extracts nested values (e.g., `data.user.username`)
+
+#### Set-Cookie Header Handling
+- **Problem**: Response headers mutated via `*response*` were lost
+  - `set-session-cookie` modified global state
+  - `json-response` returned new response, discarding headers
+- **Solution**: Functional header passing approach
+  - `src/util/response.lisp`: Added `:headers` parameter to response functions
+    - `json-response`: Accepts `:additional-headers` parameter
+    - `response-success`: Accepts `:headers` parameter
+    - `response-error`: Accepts `:headers` parameter
+  - `src/handler/auth.lisp`: Refactored cookie generation
+    - Replaced `set-session-cookie` with `make-session-cookie-header`
+    - Replaced `clear-session-cookie` with `make-clear-cookie-header`
+    - Pass headers directly to response functions
+
+#### Cookie Value Extraction
+- **Problem**: Clack/Lack returns `set-cookie` values as lists
+  - `(gethash "set-cookie" headers)` returned `("session_id=...;")`
+  - String search failed on list values
+- **Solution**: Handle list-wrapped cookie values
+  - `test/http-helper.lisp`: `assert-cookie` extracts first element from list
+  - `test/handler/auth-test.lisp`: Logout test updated for list extraction
+
+### Verified - Complete HTTP Test Suite
+
+All integration tests passing in Docker environment (2025-11-25):
+
+- ✅ **5/5 test suites successful**
+  - voro.test.util - 32 test cases
+  - voro.test.model - 7 test cases
+  - voro.test.service - 13 test cases
+  - voro.test.handler - 1 test case (placeholder)
+  - voro.test.handler.auth - 9 test cases (NEW)
+- ✅ **HTTP integration tests working**
+  - Real Woo server lifecycle management
+  - Dexador HTTP client requests
+  - JSON request/response validation
+  - Cookie-based session management
+- ✅ **All endpoints validated**
+  - POST /api/auth/register (success + 3 error cases)
+  - POST /api/auth/login (success + 3 error cases)
+  - POST /api/auth/logout (success with cookie clear)
+
+### Technical Details
+
+#### Test Execution Flow
+1. `with-test-environment` - Setup DB/Redis connections
+2. `with-test-server` - Start Woo server on port 18080
+3. `wait-for-server-ready` - Health check with 404 tolerance
+4. `with-test-db` - Transaction-wrapped test execution
+5. Automatic server stop and connection cleanup
+
+#### Jonathan Best Practices
+- Use `:from :plist` for encoding plist data
+- Use `:as :hash-table` for parsing JSON responses
+- Prefer plist over alist for test data (keyword symbols)
+
+### Commits
+
+- Branch: `feature/phase3-http-test-infrastructure`
+- `350cf0e` feat: Implement Phase3 HTTP integration test infrastructure
+- `d0d6fc0` fix: Resolve Jonathan encoding and Set-Cookie header issues in HTTP tests
+
+### Next Steps (Remaining Phases)
+
+- **Phase 4**: CI/CD integration
+  - GitHub Actions workflow
+  - Automated testing on push/PR
+- **Phase 5**: Documentation
+  - Testing guide with examples
+  - Troubleshooting documentation
+
 ## [0.1.4] - 2025-11-24
 
 ### Added - 8-Layer Defense for Test Database Protection (Phase 2)
