@@ -50,10 +50,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Jonathan JSON Encoding
 - **Problem**: Type errors when encoding plist data
   - `TYPE-ERROR: The value "testuser" is not of type LIST`
-  - Jonathan expected `:from :plist` option for plist data
-- **Solution**: Added `:from :plist` to `jonathan:to-json` calls
-  - `test/http-helper.lisp`: Updated `http-post` and `http-put` (lines 162, 184)
-  - Proper plist encoding for test request bodies
+  - Jonathan's `:from :plist` option has bugs with keyword symbols
+  - `jonathan.util:my-plist-p` incorrectly validates cons cells as plists
+- **Solution**: Convert plist to hash-table before encoding
+  - `test/http-helper.lisp`: Added `plist-to-hash-table` helper function (lines 137-149)
+  - Updated `http-post` and `http-put` to use hash-table conversion (lines 176, 198)
+  - Properly converts keyword symbols to lowercase string keys
+  - Example: `(:|username| "user")` → `{"username": "user"}`
 
 #### JSON Response Parsing
 - **Problem**: `assert-json-response` failed to traverse nested JSON

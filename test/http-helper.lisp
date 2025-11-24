@@ -134,6 +134,20 @@
 ;;; HTTPリクエストヘルパー
 ;;;
 
+(defun plist-to-hash-table (plist)
+  "Plist形式のデータをハッシュテーブルに変換（Jonathan用）
+
+  Jonathan の :from :plist オプションにバグがあるため、
+  明示的にハッシュテーブルに変換してからJSONエンコードする。
+
+  例: (list :|username| \"user\" :|password| \"pass\")
+      => #<HASH-TABLE :TEST EQUAL \"username\" \"user\" \"password\" \"pass\">"
+  (let ((hash-table (make-hash-table :test 'equal)))
+    (loop for (key value) on plist by #'cddr
+          do (setf (gethash (string-downcase (symbol-name key)) hash-table)
+                   value))
+    hash-table))
+
 (defun http-get (path &key headers cookies)
   "HTTPGETリクエストを送信
 
@@ -159,7 +173,7 @@
       (multiple-value-bind (body status response-headers)
           (dex:post (format nil "~A~A" *test-server-base-url* path)
                     :content (when json
-                              (jonathan:to-json json :from :plist))
+                              (jonathan:to-json (plist-to-hash-table json)))
                     :headers (append '(("Content-Type" . "application/json"))
                                    headers
                                    (make-cookie-header cookies)))
@@ -181,7 +195,7 @@
       (multiple-value-bind (body status response-headers)
           (dex:put (format nil "~A~A" *test-server-base-url* path)
                    :content (when json
-                             (jonathan:to-json json :from :plist))
+                             (jonathan:to-json (plist-to-hash-table json)))
                    :headers (append '(("Content-Type" . "application/json"))
                                   headers
                                   (make-cookie-header cookies)))
