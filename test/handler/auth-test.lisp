@@ -22,9 +22,9 @@
         (with-test-db
           (multiple-value-bind (body status headers)
               (http-post "/api/auth/register"
-                        :json (list :|username| "newuser"
-                                   :|password| "SecureP@ssw0rd"
-                                   :|email| "user@example.com"))
+                        :json (list (cons :|username| "newuser")
+                                   (cons :|password| "SecureP@ssw0rd")
+                                   (cons :|email| "user@example.com")))
 
             ;; ステータスコード確認
             (assert-status 200 status)
@@ -43,7 +43,7 @@
         (with-test-db
           (multiple-value-bind (body status headers)
               (http-post "/api/auth/register"
-                        :json (list :|password| "password123"))
+                        :json (list (cons :|password| "password123")))
             (declare (ignore body headers))
 
             ;; 400 Bad Request
@@ -56,7 +56,7 @@
         (with-test-db
           (multiple-value-bind (body status headers)
               (http-post "/api/auth/register"
-                        :json (list :|username| "testuser"))
+                        :json (list (cons :|username| "testuser")))
             (declare (ignore body headers))
 
             ;; 400 Bad Request
@@ -69,16 +69,16 @@
         (with-test-db
           ;; 1人目登録
           (http-post "/api/auth/register"
-                    :json (list :|username| "testuser"
-                               :|password| "password123"
-                               :|email| "testuser@example.com"))
+                    :json (list (cons :|username| "testuser")
+                               (cons :|password| "password123")
+                               (cons :|email| "testuser@example.com")))
 
           ;; 2人目登録（同じユーザー名）
           (multiple-value-bind (body status headers)
               (http-post "/api/auth/register"
-                        :json (list :|username| "testuser"
-                                   :|password| "different123"
-                                   :|email| "different@example.com"))
+                        :json (list (cons :|username| "testuser")
+                                   (cons :|password| "different123")
+                                   (cons :|email| "different@example.com")))
             (declare (ignore headers))
 
             ;; 400 Bad Request
@@ -94,9 +94,9 @@
         (with-test-db
           ;; ユーザー登録
           (http-post "/api/auth/register"
-                    :json (list :|username| "loginuser"
-                               :|password| "password123"
-                               :|email| "loginuser@example.com"))
+                    :json (list (cons :|username| "loginuser")
+                               (cons :|password| "password123")
+                               (cons :|email| "loginuser@example.com")))
 
           ;; ログアウト（セッションクリア）
           (http-post "/api/auth/logout")
@@ -104,8 +104,8 @@
           ;; ログイン
           (multiple-value-bind (body status headers)
               (http-post "/api/auth/login"
-                        :json (list :|username| "loginuser"
-                                   :|password| "password123"))
+                        :json (list (cons :|username| "loginuser")
+                                   (cons :|password| "password123")))
 
             (assert-status 200 status)
             (assert-json-response body "data" "user" "username")
@@ -118,8 +118,8 @@
         (with-test-db
           (multiple-value-bind (body status headers)
               (http-post "/api/auth/login"
-                        :json (list :|username| "nonexistent"
-                                   :|password| "password123"))
+                        :json (list (cons :|username| "nonexistent")
+                                   (cons :|password| "password123")))
             (declare (ignore body headers))
 
             ;; 401 Unauthorized
@@ -132,15 +132,15 @@
         (with-test-db
           ;; ユーザー登録
           (http-post "/api/auth/register"
-                    :json (list :|username| "user1"
-                               :|password| "correct123"
-                               :|email| "user1@example.com"))
+                    :json (list (cons :|username| "user1")
+                               (cons :|password| "correct123")
+                               (cons :|email| "user1@example.com")))
 
           ;; 間違ったパスワードでログイン
           (multiple-value-bind (body status headers)
               (http-post "/api/auth/login"
-                        :json (list :|username| "user1"
-                                   :|password| "wrong"))
+                        :json (list (cons :|username| "user1")
+                                   (cons :|password| "wrong")))
             (declare (ignore headers))
 
             ;; 401 Unauthorized
@@ -154,7 +154,7 @@
         (with-test-db
           (multiple-value-bind (body status headers)
               (http-post "/api/auth/login"
-                        :json (list :|password| "password123"))
+                        :json (list (cons :|password| "password123")))
             (declare (ignore body headers))
 
             ;; 400 Bad Request
@@ -167,7 +167,7 @@
         (with-test-db
           (multiple-value-bind (body status headers)
               (http-post "/api/auth/login"
-                        :json (list :|username| "testuser"))
+                        :json (list (cons :|username| "testuser")))
             (declare (ignore body headers))
 
             ;; 400 Bad Request
@@ -180,9 +180,9 @@
         (with-test-db
           ;; ユーザー登録（セッション取得）
           (http-post "/api/auth/register"
-                    :json (list :|username| "logoutuser"
-                               :|password| "password123"
-                               :|email| "logoutuser@example.com"))
+                    :json (list (cons :|username| "logoutuser")
+                               (cons :|password| "password123")
+                               (cons :|email| "logoutuser@example.com")))
 
           ;; ログアウト
           (multiple-value-bind (body status headers)
