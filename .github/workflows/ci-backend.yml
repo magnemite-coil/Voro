@@ -1,0 +1,109 @@
+name: Backend CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    # サービスコンテナ
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: voro_test
+          POSTGRES_USER: voro_test_user
+          POSTGRES_PASSWORD: voro_test_password
+        options: >-
+          --health-cmd "pg_isready -U voro_test_user -d voro_test"
+          --health-interval 3s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 3s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache SBCL installation
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/local/bin/sbcl
+            /usr/local/lib/sbcl
+          key: sbcl-2.5.9-${{ runner.os }}
+
+      - name: Install SBCL
+        run: |
+          if [ ! -f /usr/local/bin/sbcl ]; then
+            sudo apt-get update
+            sudo apt-get install -y sbcl
+          fi
+
+      - name: Cache Quicklisp and FASL
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/quicklisp
+            ~/.cache/common-lisp
+          key: quicklisp-${{ runner.os }}-${{ hashFiles('voro.asd') }}-${{ hashFiles('**/*.asd') }}
+          restore-keys: |
+            quicklisp-${{ runner.os }}-${{ hashFiles('voro.asd') }}-
+            quicklisp-${{ runner.os }}-
+
+      - name: Install Quicklisp
+        timeout-minutes: 10
+        run: |
+          if [ ! -d ~/quicklisp ]; then
+            curl -O https://beta.quicklisp.org/quicklisp.lisp
+            sbcl --non-interactive \
+                 --load quicklisp.lisp \
+                 --eval "(quicklisp-quickstart:install :path \"$HOME/quicklisp/\")" \
+                 --eval "(ql:add-to-init-file)"
+            rm quicklisp.lisp
+          fi
+
+      - name: Run backend tests
+        timeout-minutes: 15
+        env:
+          APP_ENV: test
+          TEST_MODE: "true"
+          DB_HOST: localhost
+          DB_PORT: 5432
+          TEST_DB_NAME: voro_test
+          TEST_DB_USER: voro_test_user
+          TEST_DB_PASSWORD: voro_test_password
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          TEST_REDIS_DB: 1
+          LOG_LEVEL: debug
+        run: |
+          sbcl --non-interactive \
+               --eval "(ql:quickload :voro/test)" \
+               --eval "(asdf:test-system :voro/test)"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: var/tmp/test-backend.log
+          retention-days: 7
