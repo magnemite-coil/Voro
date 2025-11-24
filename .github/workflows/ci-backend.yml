@@ -76,8 +76,12 @@ jobs:
             curl -O https://beta.quicklisp.org/quicklisp.lisp
             sbcl --non-interactive \
                  --load quicklisp.lisp \
-                 --eval "(quicklisp-quickstart:install :path \"$HOME/quicklisp/\")" \
-                 --eval "(ql:add-to-init-file)"
+                 --eval "(quicklisp-quickstart:install :path \"$HOME/quicklisp/\")"
+            echo '#-quicklisp
+(let ((quicklisp-init (merge-pathnames "quicklisp/setup.lisp"
+                                       (user-homedir-pathname))))
+  (when (probe-file quicklisp-init)
+    (load quicklisp-init)))' >> ~/.sbclrc
             rm quicklisp.lisp
           fi
 
