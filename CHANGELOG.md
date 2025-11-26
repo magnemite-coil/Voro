@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - JSON Library Migration
+
+#### Jonathan → Jzon Migration
+- **Reason**: Migrate from Jonathan to Jzon for RFC 8259 compliance and better safety
+  - Jonathan has non-standard extensions
+  - Jzon provides "sane defaults" with safety-first design
+  - Jzon is actively maintained
+
+#### Files Changed
+- **src/util/json.lisp**: New wrapper module for Jzon
+  - `to-json`: Convert alist to JSON string
+  - `to-json-plist`: Convert plist to JSON string
+  - `parse-json`: Parse JSON string to hash-table
+  - `alist-to-hash-table-recursive`: Recursive alist conversion (handles nested structures)
+  - `plist-to-hash-table`: Plist to hash-table conversion
+- **voro.asd**: Changed dependency from `:jonathan` to `:com.inuoe.jzon`
+- **src/util/response.lisp**: Use `voro.util.json:to-json` instead of `jonathan:to-json`
+- **src/util/log.lisp**: Use `voro.util.json:to-json-plist` instead of `jonathan:to-json`
+- **test/http-helper.lisp**: Use `jzon:stringify` and `jzon:parse` instead of Jonathan functions
+- **test/util-test.lisp**: Added comprehensive tests for JSON conversion functions
+
+#### Documentation Updated
+- `.claude/project/tech-stack.md`: Updated JSON section for Jzon
+- `.claude/project/patterns.md`: Updated error patterns for Jzon
+
+#### Breaking Changes
+- `:false` keyword is no longer supported for JSON `false` - use `nil` instead
+- JSON parsing returns hash-tables by default (not alists)
+
 ## [0.1.8] - 2025-11-26
 
 ### Fixed - Docker Test Infrastructure Improvements

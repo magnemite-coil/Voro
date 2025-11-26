@@ -1,5 +1,7 @@
 (defpackage voro.util.response
   (:use :cl)
+  (:import-from :voro.util.json
+                :to-json)
   (:export
    :response-success
    :response-error
@@ -13,7 +15,7 @@
   (list status-code
         (append (list :content-type "application/json; charset=utf-8")
                 additional-headers)
-        (list (jonathan:to-json body :from :alist))))
+        (list (to-json body))))
 
 (defun response-success (data &key (status 200) headers)
   "成功レスポンスを生成
@@ -30,7 +32,7 @@
    message: ユーザー向けエラーメッセージ
    error-id: エラー追跡用ID（オプション）
    headers: 追加ヘッダー (plist形式)"
-  (let ((error-data (list (cons :|success| :false)
+  (let ((error-data (list (cons :|success| nil)
                           (cons :|error| message))))
     (when error-id
       (setf error-data (append error-data

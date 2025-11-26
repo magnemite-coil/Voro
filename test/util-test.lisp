@@ -7,7 +7,13 @@
                 :validation-error)
   (:import-from :voro.util.crypto
                 :hash-password
-                :verify-password))
+                :verify-password)
+  (:import-from :voro.util.json
+                :alist-to-hash-table-recursive
+                :plist-to-hash-table
+                :to-json
+                :to-json-plist
+                :parse-json))
 
 (in-package :voro.test.util)
 
@@ -95,3 +101,103 @@
     (let ((hash1 (hash-password "password123"))
           (hash2 (hash-password "password123")))
       (ok (not (string= hash1 hash2))))))
+
+;;; JSON変換テスト
+
+(deftest json-alist-to-hash-table-test ()
+  "alist-to-hash-table-recursive のテスト"
+  (testing "単純なalist"
+    (let ((result (alist-to-hash-table-recursive
+                   '((:|name| . "test") (:|value| . 123)))))
+      (ok (hash-table-p result))
+      (ok (equal "test" (gethash "name" result)))
+      (ok (= 123 (gethash "value" result)))))
+
+  (testing "ネストしたalist"
+    (let ((result (alist-to-hash-table-recursive
+                   '((:|user| . ((:|id| . 1) (:|name| . "test")))))))
+      (ok (hash-table-p result))
+      (ok (hash-table-p (gethash "user" result)))
+      (ok (= 1 (gethash "id" (gethash "user" result))))))
+
+  (testing "トップレベルの空リストは空オブジェクトになる"
+    (let ((result (alist-to-hash-table-recursive nil)))
+      (ok (hash-table-p result))
+      (ok (= 0 (hash-table-count result)))))
+
+  (testing "alistの値としてのnilはfalseになる"
+    (let ((result (alist-to-hash-table-recursive
+                   '((:|success| . nil)))))
+      (ok (hash-table-p result))
+      (ok (null (gethash "success" result))))))
+
+(deftest json-plist-to-hash-table-test ()
+  "plist-to-hash-table のテスト"
+  (testing "通常のplist"
+    (let ((result (plist-to-hash-table
+                   '(:|user_id| 123 :|title| "test"))))
+      (ok (hash-table-p result))
+      (ok (= 123 (gethash "user_id" result)))
+      (ok (equal "test" (gethash "title" result)))))
+
+  (testing "空のplist"
+    (let ((result (plist-to-hash-table nil)))
+      (ok (hash-table-p result))
+      (ok (= 0 (hash-table-count result))))))
+
+(deftest json-to-json-test ()
+  "to-json のテスト"
+  (testing "単純なalist"
+    (let ((json (to-json '((:|name| . "test")))))
+      (ok (stringp json))
+      (ok (search "name" json))
+      (ok (search "test" json))))
+
+  (testing "ネストしたalist"
+    (let ((json (to-json
+                 '((:|success| . t)
+                   (:|data| . ((:|id| . 1)))))))
+      (ok (stringp json))
+      (ok (search "success" json))
+      (ok (search "data" json))))
+
+  (testing "true/falseの出力"
+    (let ((json (to-json
+                 '((:|enabled| . t)
+                   (:|disabled| . nil)))))
+      (ok (search "true" json))
+      ;; alistの値としてのnilはfalseになる
+      (ok (search "false" json)))))
+
+(deftest json-to-json-plist-test ()
+  "to-json-plist のテスト"
+  (testing "単純なplist"
+    (let ((json (to-json-plist '(:|name| "test" :|value| 123))))
+      (ok (stringp json))
+      (ok (search "name" json))
+      (ok (search "test" json))
+      (ok (search "value" json))))
+
+  (testing "空のplist"
+    (let ((json (to-json-plist nil)))
+      (ok (stringp json))
+      (ok (equal "{}" json)))))
+
+(deftest json-parse-json-test ()
+  "parse-json のテスト"
+  (testing "オブジェクトのパース"
+    (let ((result (parse-json "{\"name\":\"test\",\"value\":123}")))
+      (ok (hash-table-p result))
+      (ok (equal "test" (gethash "name" result)))
+      (ok (= 123 (gethash "value" result)))))
+
+  (testing "配列のパース"
+    (let ((result (parse-json "[1,2,3]")))
+      (ok (vectorp result))
+      (ok (= 3 (length result)))))
+
+  (testing "プリミティブ値のパース"
+    (ok (eq t (parse-json "true")))
+    (ok (eq nil (parse-json "false")))
+    (ok (eq 'null (parse-json "null")))
+    (ok (= 42 (parse-json "42")))))

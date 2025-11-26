@@ -4,7 +4,7 @@
                 :clackup
                 :stop)
   (:import-from :dexador)
-  (:import-from :jonathan)
+  (:local-nicknames (:jzon :com.inuoe.jzon))
   (:export
    ;; HTTPサーバー管理
    :with-test-server
@@ -135,10 +135,10 @@
 ;;;
 
 (defun alist-to-hash-table (alist)
-  "Alist形式のデータをハッシュテーブルに変換（Jonathan用）
+  "Alist形式のデータをハッシュテーブルに変換（Jzon用）
 
-  Jonathan の :from :alist オプションにバグがあるため、
-  明示的にハッシュテーブルに変換してからJSONエンコードする。
+  Jzonはalistを直接サポートしないため、
+  ハッシュテーブルに変換してからJSONエンコードする。
 
   例: '((:|username| . \"user\") (:|password| . \"pass\"))
       => #<HASH-TABLE :TEST EQUAL \"username\" \"user\" \"password\" \"pass\">"
@@ -174,7 +174,7 @@
       (multiple-value-bind (body status response-headers)
           (dex:post (format nil "~A~A" *test-server-base-url* path)
                     :content (when json
-                              (jonathan:to-json (alist-to-hash-table json)))
+                              (jzon:stringify (alist-to-hash-table json)))
                     :headers (append '(("Content-Type" . "application/json"))
                                    headers
                                    (make-cookie-header cookies)))
@@ -197,7 +197,7 @@
       (multiple-value-bind (body status response-headers)
           (dex:put (format nil "~A~A" *test-server-base-url* path)
                    :content (when json
-                             (jonathan:to-json (alist-to-hash-table json)))
+                             (jzon:stringify (alist-to-hash-table json)))
                    :headers (append '(("Content-Type" . "application/json"))
                                   headers
                                   (make-cookie-header cookies)))
@@ -259,7 +259,7 @@
     (assert-json-response body \"user\" \"id\")
     ; => body[\"user\"][\"id\"] が存在することを確認"
   (format t "~&[DEBUG] Response body: ~A~%" body)
-  (let* ((parsed (jonathan:parse body :as :hash-table))
+  (let* ((parsed (jzon:parse body))
          (result (reduce (lambda (hash-table key)
                           (let ((key-str (string-downcase (string key))))
                             (format t "~&[DEBUG] key=~A, key-str=~A, current-value=~A~%"
