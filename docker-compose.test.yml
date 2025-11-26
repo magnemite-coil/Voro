@@ -70,8 +70,8 @@ services:
       - ./test:/app/test:ro
       - ./voro.asd:/app/voro.asd:ro
 
-      # Quicklispキャッシュ（永続化）
-      - sbcl-cache:/home/lispuser/quicklisp
+      # FASLキャッシュ（永続化）
+      - sbcl-cache:/home/lispuser/.cache/common-lisp
     networks:
       - voro-test-network
     command: >
@@ -110,19 +110,22 @@ services:
       - ./src:/app/src:ro
       - ./test:/app/test:ro
       - ./voro.asd:/app/voro.asd:ro
-      - sbcl-cache:/home/lispuser/quicklisp
+      - sbcl-cache:/home/lispuser/.cache/common-lisp
     networks:
       - voro-test-network
-    command: >
-      sh -c "while true; do
-        echo '========== Running tests ==========';
-        sbcl --non-interactive
-             --eval '(push #P\"/app/\" asdf:*central-registry*)'
-             --eval '(ql:quickload :voro/test :silent t)'
-             --eval '(asdf:test-system :voro/test)' || true;
-        echo '========== Waiting for changes (press Ctrl+C to stop) ==========';
-        sleep 5;
-      done"
+    command:
+      - sh
+      - -c
+      - |
+        while true; do
+          echo '========== Running tests =========='
+          sbcl --non-interactive \
+               --eval '(push #P"/app/" asdf:*central-registry*)' \
+               --eval '(ql:quickload :voro/test :silent t)' \
+               --eval '(asdf:test-system :voro/test)' || true
+          echo '========== Waiting for changes (press Ctrl+C to stop) =========='
+          sleep 5
+        done
 
 volumes:
   sbcl-cache:
