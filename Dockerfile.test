@@ -36,7 +36,8 @@ RUN chown lispuser:lispuser /app
 USER lispuser
 
 # 依存関係を事前ロード（キャッシュレイヤー）
-# 一般的な依存関係のみロード（プロジェクト固有のコードは実行時にロード）
+# 注: voro.asdはsrc/配下を参照するため、ビルド時にはロードできない
+# 主要な依存関係のみを個別にロードする方式を採用
 RUN sbcl --non-interactive \
          --eval "(ql:quickload :caveman2 :silent t)" \
          --eval "(ql:quickload :mito :silent t)" \

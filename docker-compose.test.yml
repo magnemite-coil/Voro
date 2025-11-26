@@ -70,10 +70,62 @@ services:
       - ./test:/app/test:ro
       - ./voro.asd:/app/voro.asd:ro
 
-      # Quicklispキャッシュ（永続化）
-      - sbcl-cache:/home/lispuser/quicklisp
+      # FASLキャッシュ（永続化）
+      - sbcl-cache:/home/lispuser/.cache/common-lisp
     networks:
       - voro-test-network
+    command: >
+      sbcl --non-interactive
+           --eval "(push #P\"/app/\" asdf:*central-registry*)"
+           --eval "(ql:quickload :voro/test :silent t)"
+           --eval "(asdf:test-system :voro/test)"
+
+  # Watch mode用テストランナー（開発時）
+  test-watcher:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        HOST_UID: ${HOST_UID:-1000}
+        HOST_GID: ${HOST_GID:-1000}
+    container_name: voro-test-watcher
+    depends_on:
+      test-db:
+        condition: service_healthy
+      test-redis:
+        condition: service_healthy
+    environment:
+      APP_ENV: test
+      TEST_MODE: "true"
+      DB_HOST: test-db
+      DB_PORT: 5432
+      TEST_DB_NAME: voro_test
+      TEST_DB_USER: voro_test_user
+      TEST_DB_PASSWORD: voro_test_password
+      REDIS_HOST: test-redis
+      REDIS_PORT: 6379
+      TEST_REDIS_DB: 1
+      LOG_LEVEL: debug
+    volumes:
+      - ./src:/app/src:ro
+      - ./test:/app/test:ro
+      - ./voro.asd:/app/voro.asd:ro
+      - sbcl-cache:/home/lispuser/.cache/common-lisp
+    networks:
+      - voro-test-network
+    command:
+      - sh
+      - -c
+      - |
+        while true; do
+          echo '========== Running tests =========='
+          sbcl --non-interactive \
+               --eval '(push #P"/app/" asdf:*central-registry*)' \
+               --eval '(ql:quickload :voro/test :silent t)' \
+               --eval '(asdf:test-system :voro/test)' || true
+          echo '========== Waiting for changes (press Ctrl+C to stop) =========='
+          sleep 5
+        done
 
 volumes:
   sbcl-cache:
