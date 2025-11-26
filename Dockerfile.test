@@ -32,17 +32,18 @@ RUN (groupadd -g ${HOST_GID} lispuser 2>/dev/null || groupmod -n lispuser $(gete
 WORKDIR /app
 RUN chown lispuser:lispuser /app
 
+# システム定義ファイルをコピー（依存関係解決用）
+COPY --chown=lispuser:lispuser voro.asd /app/voro.asd
+
 # lispuserに切り替え
 USER lispuser
 
 # 依存関係を事前ロード（キャッシュレイヤー）
-# 一般的な依存関係のみロード（プロジェクト固有のコードは実行時にロード）
+# voro.asdに基づいて全依存関係を自動ロード（保守性向上）
 RUN sbcl --non-interactive \
-         --eval "(ql:quickload :caveman2 :silent t)" \
-         --eval "(ql:quickload :mito :silent t)" \
-         --eval "(ql:quickload :cl-redis :silent t)" \
-         --eval "(ql:quickload :rove :silent t)" \
-         --eval "(ql:quickload :dexador :silent t)" \
+         --eval "(push #P\"/app/\" asdf:*central-registry*)" \
+         --eval "(ql:quickload :voro :silent t)" \
+         --eval "(ql:quickload :voro/test :silent t)" \
          --eval "(quit)"
 
 # ソースコードはvolumeマウント（コピーしない）
