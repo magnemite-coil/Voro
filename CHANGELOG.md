@@ -41,6 +41,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Nested alist conversion works
 - ✅ All unit tests pass (voro.test.util: 69 test cases)
 
+### Documentation Updates
+
+- **docs/testing/troubleshooting.md**: Updated sample code to use Jzon
+  - `jonathan:parse` → `jzon:parse`
+  - `jonathan:to-json` → `jzon:stringify`
+- **docs/design/jonathan-to-jzon-migration.md**: Added troubleshooting.md to documentation update checklist
+
 ### Commits
 
 - Branch: `refactor/jonathan-to-jzon`
