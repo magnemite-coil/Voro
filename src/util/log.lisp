@@ -3,6 +3,8 @@
   (:import-from :voro.config
                 :*log-level*
                 :*log-file*)
+  (:import-from :voro.util.json
+                :to-json-plist)
   (:export
    :log-debug
    :log-info
@@ -34,7 +36,7 @@
                     nil (local-time:now)
                     :format local-time:+iso-8601-format+))
         (context-str (if context
-                         (format nil " ~A" (jonathan:to-json context))
+                         (format nil " ~A" (to-json-plist context))
                          ""))
         (error-str (if error
                       (format nil " ERROR: ~A" error)

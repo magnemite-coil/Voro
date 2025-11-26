@@ -394,7 +394,7 @@ ERROR: JSON parse error: unexpected character
 
 ;; 3. JSONパースのエラーハンドリング
 (handler-case
-    (jonathan:parse body)
+    (jzon:parse body)
   (error (e)
     (format t "~&[ERROR] JSON parse failed: ~A~%" e)
     (format t "~&[ERROR] Body content: ~A~%" body)
@@ -572,7 +572,7 @@ voro_test=# SELECT * FROM "user";
   (multiple-value-bind (body status headers uri)
       (dex:post (build-test-url path)
                :headers (build-headers cookie)
-               :content (jonathan:to-json json))
+               :content (jzon:stringify json))
 
     (format t "~&[DEBUG] Status: ~A~%" status)
     (format t "~&[DEBUG] Response body: ~A~%" body)

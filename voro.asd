@@ -20,7 +20,7 @@
     :cl-redis
 
     ;; JSON
-    :jonathan
+    :com.inuoe.jzon
 
     ;; 暗号化
     :ironclad
@@ -45,6 +45,7 @@
        (:module "util"
         :depends-on ("config")
         :components (
+          (:file "json")
           (:file "log")
           (:file "response")
           (:file "crypto")
