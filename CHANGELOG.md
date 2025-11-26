@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.8] - 2025-11-26
+
+### Fixed - Docker Test Infrastructure Improvements
+
+#### Dockerfile.test Dependency Loading
+- **Problem**: `voro.asd`-based dependency loading failed during Docker build
+  - `voro.asd` references `src/` directory which isn't available during build time
+  - Only mounted as volume at runtime, not during `docker build`
+- **Solution**: Changed to individual package loading
+  - Explicitly load: `:caveman2`, `:mito`, `:cl-redis`, `:rove`, `:dexador`
+  - Ensures dependencies are cached in Docker image layer
+  - Maintains fast subsequent builds
+
+#### FASL Cache Volume Path
+- **Problem**: FASL cache volume mounted to wrong path
+  - Was: `/home/lispuser/quicklisp` (Quicklisp installation directory)
+  - FASL files are compiled to `~/.cache/common-lisp/`, not Quicklisp dir
+- **Solution**: Corrected volume mount path
+  - Now: `/home/lispuser/.cache/common-lisp`
+  - Properly caches compiled FASL files across container runs
+
+#### Test Watcher Command Syntax
+- **Problem**: `test-watcher` service command failed with shell parsing errors
+  - YAML multi-line string `>` folded newlines incorrectly
+  - `sbcl --eval` arguments parsed as separate shell commands
+  - Error: `sh: 4: --eval: not found`
+- **Solution**: Changed to explicit array format with proper escaping
+  - Used `command: [sh, -c, |...]` syntax
+  - Proper backslash continuation for sbcl arguments
+  - Watch mode now works correctly with 5-second polling
+
+### Verified - All Tests Passing
+
+Docker test suite fully operational (2025-11-26):
+
+- ✅ **5/5 test suites successful** (62 test cases)
+- ✅ **test-runner**: Exit code 0, all tests pass
+- ✅ **test-watcher**: Continuous test execution working
+- ✅ **FASL caching**: Persistent across container restarts
+- ✅ **Volume cleanup**: No more "file exists" errors
+
+### Commits
+
+- Branch: `fix/hook-exit-code`
+- `6fe5c89` fix(docker): improve dependency loading and FASL cache path
+
 ## [0.1.7] - 2025-11-25
 
 ### Added - Comprehensive Testing Documentation (Phase 5)
