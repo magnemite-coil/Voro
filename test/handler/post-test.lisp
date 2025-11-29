@@ -1,0 +1,477 @@
+(defpackage voro.test.handler.post
+  (:use :cl :rove)
+  (:import-from :voro.test.setup
+                :with-test-environment
+                :with-test-db)
+  (:import-from :voro.test.http-helper
+                :with-test-server
+                :http-post
+                :http-get
+                :http-put
+                :http-delete
+                :assert-status
+                :assert-json-response
+                :with-authenticated-user)
+  (:import-from :voro.test.fixtures
+                :create-test-user
+                :create-test-session))
+
+(in-package :voro.test.handler.post)
+
+;;; POST /api/posts - 投稿作成
+
+(deftest post-create-success-test
+  (testing "POST /api/posts - 投稿作成成功（公開投稿）"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            (multiple-value-bind (body status headers)
+                (http-post "/api/posts"
+                          :json (list (cons :|title| "Test Title")
+                                     (cons :|content| "Test Content")
+                                     (cons :|published| t))
+                          :cookies (list (cons "session_id" session-id)))
+              (declare (ignore headers))
+              (assert-status 201 status)
+              (assert-json-response body "data" "post" "id")
+              (assert-json-response body "data" "post" "title")
+              (assert-json-response body "data" "post" "content"))))))))
+
+(deftest post-create-draft-test
+  (testing "POST /api/posts - 下書き投稿作成（published未指定）"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            (multiple-value-bind (body status headers)
+                (http-post "/api/posts"
+                          :json (list (cons :|title| "Draft Title")
+                                     (cons :|content| "Draft Content"))
+                          :cookies (list (cons "session_id" session-id)))
+              (declare (ignore headers))
+              (assert-status 201 status)
+              (assert-json-response body "data" "post" "id"))))))))
+
+(deftest post-create-unauthorized-test
+  (testing "POST /api/posts - 未認証エラー"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (body status headers)
+              (http-post "/api/posts"
+                        :json (list (cons :|title| "Test Title")
+                                   (cons :|content| "Test Content")))
+            (declare (ignore body headers))
+            (assert-status 401 status)))))))
+
+(deftest post-create-validation-error-test
+  (testing "POST /api/posts - バリデーションエラー（タイトルなし）"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            (multiple-value-bind (body status headers)
+                (http-post "/api/posts"
+                          :json (list (cons :|content| "Content only"))
+                          :cookies (list (cons "session_id" session-id)))
+              (declare (ignore body headers))
+              (assert-status 400 status))))))))
+
+;;; GET /api/posts - 公開投稿一覧
+
+(deftest post-list-test
+  (testing "GET /api/posts - 公開投稿一覧取得"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          ;; テスト投稿を作成
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            (http-post "/api/posts"
+                      :json (list (cons :|title| "Public Post 1")
+                                 (cons :|content| "Content 1")
+                                 (cons :|published| t))
+                      :cookies (list (cons "session_id" session-id)))
+            (http-post "/api/posts"
+                      :json (list (cons :|title| "Public Post 2")
+                                 (cons :|content| "Content 2")
+                                 (cons :|published| t))
+                      :cookies (list (cons "session_id" session-id))))
+
+          ;; 一覧取得（認証不要）
+          (multiple-value-bind (body status headers)
+              (http-get "/api/posts")
+            (declare (ignore headers))
+            (assert-status 200 status)
+            (assert-json-response body "data" "posts")
+            (assert-json-response body "data" "pagination")))))))
+
+;;; GET /api/posts/:id - 投稿詳細
+
+(deftest post-get-published-test
+  (testing "GET /api/posts/:id - 公開投稿取得"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            ;; 投稿作成
+            (multiple-value-bind (create-body create-status create-headers)
+                (http-post "/api/posts"
+                          :json (list (cons :|title| "Public Post")
+                                     (cons :|content| "Content")
+                                     (cons :|published| t))
+                          :cookies (list (cons "session_id" session-id)))
+              (declare (ignore create-status create-headers))
+              ;; IDを抽出
+              (let* ((parsed (com.inuoe.jzon:parse create-body))
+                     (post-id (gethash "id" (gethash "post" (gethash "data" parsed)))))
+                ;; 認証なしで取得可能
+                (multiple-value-bind (body status headers)
+                    (http-get (format nil "/api/posts/~D" post-id))
+                  (declare (ignore headers))
+                  (assert-status 200 status)
+                  (assert-json-response body "data" "post" "title"))))))))))
+
+(deftest post-get-draft-owner-test
+  (testing "GET /api/posts/:id - 下書き投稿取得（所有者）"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            ;; 下書き投稿作成
+            (multiple-value-bind (create-body create-status create-headers)
+                (http-post "/api/posts"
+                          :json (list (cons :|title| "Draft Post")
+                                     (cons :|content| "Content")
+                                     (cons :|published| nil))
+                          :cookies (list (cons "session_id" session-id)))
+              (declare (ignore create-status create-headers))
+              (let* ((parsed (com.inuoe.jzon:parse create-body))
+                     (post-id (gethash "id" (gethash "post" (gethash "data" parsed)))))
+                ;; 所有者として取得可能
+                (multiple-value-bind (body status headers)
+                    (http-get (format nil "/api/posts/~D" post-id)
+                             :cookies (list (cons "session_id" session-id)))
+                  (declare (ignore headers))
+                  (assert-status 200 status)
+                  (assert-json-response body "data" "post" "title"))))))))))
+
+(deftest post-get-draft-non-owner-test
+  (testing "GET /api/posts/:id - 下書き投稿取得（非所有者）→404"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          ;; ユーザー1が下書き作成
+          (multiple-value-bind (session-id1 user1)
+              (create-test-session)
+            (declare (ignore user1))
+            (multiple-value-bind (create-body create-status create-headers)
+                (http-post "/api/posts"
+                          :json (list (cons :|title| "Draft Post")
+                                     (cons :|content| "Content")
+                                     (cons :|published| nil))
+                          :cookies (list (cons "session_id" session-id1)))
+              (declare (ignore create-status create-headers))
+              (let* ((parsed (com.inuoe.jzon:parse create-body))
+                     (post-id (gethash "id" (gethash "post" (gethash "data" parsed)))))
+                ;; ユーザー2として取得試行
+                (multiple-value-bind (session-id2 user2)
+                    (create-test-session)
+                  (declare (ignore user2))
+                  (multiple-value-bind (body status headers)
+                      (http-get (format nil "/api/posts/~D" post-id)
+                               :cookies (list (cons "session_id" session-id2)))
+                    (declare (ignore body headers))
+                    (assert-status 404 status)))))))))))
+
+;;; PUT /api/posts/:id - 投稿更新
+
+(deftest post-update-success-test
+  (testing "PUT /api/posts/:id - 投稿更新成功"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            ;; 投稿作成
+            (multiple-value-bind (create-body create-status create-headers)
+                (http-post "/api/posts"
+                          :json (list (cons :|title| "Original Title")
+                                     (cons :|content| "Original Content"))
+                          :cookies (list (cons "session_id" session-id)))
+              (declare (ignore create-status create-headers))
+              (let* ((parsed (com.inuoe.jzon:parse create-body))
+                     (post-id (gethash "id" (gethash "post" (gethash "data" parsed)))))
+                ;; 更新
+                (multiple-value-bind (body status headers)
+                    (http-put (format nil "/api/posts/~D" post-id)
+                             :json (list (cons :|title| "Updated Title"))
+                             :cookies (list (cons "session_id" session-id)))
+                  (declare (ignore headers))
+                  (assert-status 200 status)
+                  (assert-json-response body "data" "post" "title"))))))))))
+
+(deftest post-update-publish-test
+  (testing "PUT /api/posts/:id - 下書きを公開に変更"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            ;; 下書き作成
+            (multiple-value-bind (create-body create-status create-headers)
+                (http-post "/api/posts"
+                          :json (list (cons :|title| "Draft")
+                                     (cons :|content| "Content")
+                                     (cons :|published| nil))
+                          :cookies (list (cons "session_id" session-id)))
+              (declare (ignore create-status create-headers))
+              (let* ((parsed (com.inuoe.jzon:parse create-body))
+                     (post-id (gethash "id" (gethash "post" (gethash "data" parsed)))))
+                ;; 公開に変更
+                (multiple-value-bind (body status headers)
+                    (http-put (format nil "/api/posts/~D" post-id)
+                             :json (list (cons :|published| t))
+                             :cookies (list (cons "session_id" session-id)))
+                  (declare (ignore headers))
+                  (assert-status 200 status)
+                  (assert-json-response body "data" "post"))))))))))
+
+(deftest post-update-forbidden-test
+  (testing "PUT /api/posts/:id - 他人の投稿更新→403"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          ;; ユーザー1が投稿作成
+          (multiple-value-bind (session-id1 user1)
+              (create-test-session)
+            (declare (ignore user1))
+            (multiple-value-bind (create-body create-status create-headers)
+                (http-post "/api/posts"
+                          :json (list (cons :|title| "Original")
+                                     (cons :|content| "Content"))
+                          :cookies (list (cons "session_id" session-id1)))
+              (declare (ignore create-status create-headers))
+              (let* ((parsed (com.inuoe.jzon:parse create-body))
+                     (post-id (gethash "id" (gethash "post" (gethash "data" parsed)))))
+                ;; ユーザー2として更新試行
+                (multiple-value-bind (session-id2 user2)
+                    (create-test-session)
+                  (declare (ignore user2))
+                  (multiple-value-bind (body status headers)
+                      (http-put (format nil "/api/posts/~D" post-id)
+                               :json (list (cons :|title| "Hacked"))
+                               :cookies (list (cons "session_id" session-id2)))
+                    (declare (ignore body headers))
+                    (assert-status 403 status)))))))))))
+
+;;; DELETE /api/posts/:id - 投稿削除
+
+(deftest post-delete-success-test
+  (testing "DELETE /api/posts/:id - 投稿削除成功"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            ;; 投稿作成
+            (multiple-value-bind (create-body create-status create-headers)
+                (http-post "/api/posts"
+                          :json (list (cons :|title| "ToDelete")
+                                     (cons :|content| "Content"))
+                          :cookies (list (cons "session_id" session-id)))
+              (declare (ignore create-status create-headers))
+              (let* ((parsed (com.inuoe.jzon:parse create-body))
+                     (post-id (gethash "id" (gethash "post" (gethash "data" parsed)))))
+                ;; 削除
+                (multiple-value-bind (body status headers)
+                    (http-delete (format nil "/api/posts/~D" post-id)
+                                :cookies (list (cons "session_id" session-id)))
+                  (declare (ignore headers))
+                  (assert-status 200 status)
+                  (assert-json-response body "data" "message"))
+                ;; 削除後は取得不可
+                (multiple-value-bind (body status headers)
+                    (http-get (format nil "/api/posts/~D" post-id)
+                             :cookies (list (cons "session_id" session-id)))
+                  (declare (ignore body headers))
+                  (assert-status 404 status))))))))))
+
+(deftest post-delete-forbidden-test
+  (testing "DELETE /api/posts/:id - 他人の投稿削除→403"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          ;; ユーザー1が投稿作成
+          (multiple-value-bind (session-id1 user1)
+              (create-test-session)
+            (declare (ignore user1))
+            (multiple-value-bind (create-body create-status create-headers)
+                (http-post "/api/posts"
+                          :json (list (cons :|title| "Original")
+                                     (cons :|content| "Content"))
+                          :cookies (list (cons "session_id" session-id1)))
+              (declare (ignore create-status create-headers))
+              (let* ((parsed (com.inuoe.jzon:parse create-body))
+                     (post-id (gethash "id" (gethash "post" (gethash "data" parsed)))))
+                ;; ユーザー2として削除試行
+                (multiple-value-bind (session-id2 user2)
+                    (create-test-session)
+                  (declare (ignore user2))
+                  (multiple-value-bind (body status headers)
+                      (http-delete (format nil "/api/posts/~D" post-id)
+                                  :cookies (list (cons "session_id" session-id2)))
+                    (declare (ignore body headers))
+                    (assert-status 403 status)))))))))))
+
+;;; GET /api/users/:user_id/posts - 特定ユーザーの公開投稿一覧
+
+(deftest user-posts-test
+  (testing "GET /api/users/:user_id/posts - 特定ユーザーの公開投稿一覧"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (let ((user-id (voro.model.user:user-id user)))
+              ;; 投稿作成
+              (http-post "/api/posts"
+                        :json (list (cons :|title| "Public")
+                                   (cons :|content| "Content")
+                                   (cons :|published| t))
+                        :cookies (list (cons "session_id" session-id)))
+              (http-post "/api/posts"
+                        :json (list (cons :|title| "Draft")
+                                   (cons :|content| "Content")
+                                   (cons :|published| nil))
+                        :cookies (list (cons "session_id" session-id)))
+
+              ;; 公開投稿のみ取得される
+              (multiple-value-bind (body status headers)
+                  (http-get (format nil "/api/users/~D/posts" user-id))
+                (declare (ignore headers))
+                (assert-status 200 status)
+                (assert-json-response body "data" "posts")
+                (assert-json-response body "data" "pagination")))))))))
+
+(deftest user-posts-not-found-test
+  (testing "GET /api/users/:user_id/posts - 存在しないユーザー→404"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (body status headers)
+              (http-get "/api/users/999999/posts")
+            (declare (ignore body headers))
+            (assert-status 404 status)))))))
+
+;;; GET /api/me/posts - 自分の投稿一覧
+
+(deftest my-posts-test
+  (testing "GET /api/me/posts - 自分の投稿一覧（全件）"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            ;; 投稿作成
+            (http-post "/api/posts"
+                      :json (list (cons :|title| "My Public")
+                                 (cons :|content| "Content")
+                                 (cons :|published| t))
+                      :cookies (list (cons "session_id" session-id)))
+            (http-post "/api/posts"
+                      :json (list (cons :|title| "My Draft")
+                                 (cons :|content| "Content")
+                                 (cons :|published| nil))
+                      :cookies (list (cons "session_id" session-id)))
+
+            ;; 全件取得
+            (multiple-value-bind (body status headers)
+                (http-get "/api/me/posts"
+                         :cookies (list (cons "session_id" session-id)))
+              (declare (ignore headers))
+              (assert-status 200 status)
+              (assert-json-response body "data" "posts")
+              (assert-json-response body "data" "pagination"))))))))
+
+(deftest my-posts-filter-published-test
+  (testing "GET /api/me/posts?published=true - 公開投稿のみ"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            ;; 投稿作成
+            (http-post "/api/posts"
+                      :json (list (cons :|title| "Public Only")
+                                 (cons :|content| "Content")
+                                 (cons :|published| t))
+                      :cookies (list (cons "session_id" session-id)))
+            (http-post "/api/posts"
+                      :json (list (cons :|title| "Draft Only")
+                                 (cons :|content| "Content")
+                                 (cons :|published| nil))
+                      :cookies (list (cons "session_id" session-id)))
+
+            ;; 公開のみ取得
+            (multiple-value-bind (body status headers)
+                (http-get "/api/me/posts?published=true"
+                         :cookies (list (cons "session_id" session-id)))
+              (declare (ignore headers))
+              (assert-status 200 status)
+              (assert-json-response body "data" "posts"))))))))
+
+(deftest my-posts-filter-draft-test
+  (testing "GET /api/me/posts?published=false - 非公開投稿のみ"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            ;; 投稿作成
+            (http-post "/api/posts"
+                      :json (list (cons :|title| "Public Only")
+                                 (cons :|content| "Content")
+                                 (cons :|published| t))
+                      :cookies (list (cons "session_id" session-id)))
+            (http-post "/api/posts"
+                      :json (list (cons :|title| "Draft Only")
+                                 (cons :|content| "Content")
+                                 (cons :|published| nil))
+                      :cookies (list (cons "session_id" session-id)))
+
+            ;; 非公開のみ取得
+            (multiple-value-bind (body status headers)
+                (http-get "/api/me/posts?published=false"
+                         :cookies (list (cons "session_id" session-id)))
+              (declare (ignore headers))
+              (assert-status 200 status)
+              (assert-json-response body "data" "posts"))))))))
+
+(deftest my-posts-unauthorized-test
+  (testing "GET /api/me/posts - 未認証エラー"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (body status headers)
+              (http-get "/api/me/posts")
+            (declare (ignore body headers))
+            (assert-status 401 status)))))))
