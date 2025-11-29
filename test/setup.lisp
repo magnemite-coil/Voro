@@ -110,7 +110,8 @@
 
   ;; PostgreSQL クリーンアップ - 動的アプローチ
   ;; 方法1: 既知のモデルクラスから取得（推奨）
-  (let ((model-classes '(voro.model.user:user)))
+  ;; 注意: 外部キー制約を考慮して、依存される側（user）より先に依存する側（post）を削除
+  (let ((model-classes '(voro.model.post:post voro.model.user:user)))
     (dolist (model-class model-classes)
       (let ((table-name (mito.class:table-name (find-class model-class))))
         (handler-case
@@ -163,6 +164,7 @@
 
   ;; 8層防御: 層6 - テーブル存在確認（存在しない場合は作成）
   (ensure-table-exists 'voro.model.user:user)
+  (ensure-table-exists 'voro.model.post:post)
 
   ;; データクリーンアップ
   (cleanup-test-data))

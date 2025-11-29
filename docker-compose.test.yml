@@ -69,9 +69,6 @@ services:
       - ./src:/app/src:ro
       - ./test:/app/test:ro
       - ./voro.asd:/app/voro.asd:ro
-
-      # FASLキャッシュ（永続化）
-      - sbcl-cache:/home/lispuser/.cache/common-lisp
     networks:
       - voro-test-network
     command: >
@@ -110,7 +107,6 @@ services:
       - ./src:/app/src:ro
       - ./test:/app/test:ro
       - ./voro.asd:/app/voro.asd:ro
-      - sbcl-cache:/home/lispuser/.cache/common-lisp
     networks:
       - voro-test-network
     command:
@@ -126,10 +122,6 @@ services:
           echo '========== Waiting for changes (press Ctrl+C to stop) =========='
           sleep 5
         done
-
-volumes:
-  sbcl-cache:
-    name: voro-sbcl-cache
 
 networks:
   voro-test-network:

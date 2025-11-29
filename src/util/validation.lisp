@@ -5,7 +5,11 @@
    :validate-username
    :validate-email
    :validation-error
-   :validation-error-message))
+   :validation-error-message
+   :authorization-error
+   :authorization-error-message
+   :not-found-error
+   :not-found-error-message))
 
 (in-package :voro.util.validation)
 
@@ -18,6 +22,22 @@
   (:report (lambda (condition stream)
              (format stream "Validation error: ~A"
                      (validation-error-message condition)))))
+
+(define-condition authorization-error (error)
+  ((message :initarg :message
+            :reader authorization-error-message))
+  (:documentation "認可エラー（権限不足）")
+  (:report (lambda (condition stream)
+             (format stream "Authorization error: ~A"
+                     (authorization-error-message condition)))))
+
+(define-condition not-found-error (error)
+  ((message :initarg :message
+            :reader not-found-error-message))
+  (:documentation "リソース不在エラー")
+  (:report (lambda (condition stream)
+             (format stream "Not found: ~A"
+                     (not-found-error-message condition)))))
 
 ;;; バリデーション関数
 

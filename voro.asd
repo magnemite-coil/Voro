@@ -59,7 +59,8 @@
        (:module "model"
         :depends-on ("db" "util")
         :components (
-          (:file "user")))
+          (:file "user")
+          (:file "post")))
 
        ;; ミドルウェア
        (:module "middleware"
@@ -71,7 +72,8 @@
        (:module "service"
         :depends-on ("model" "middleware" "util")
         :components (
-          (:file "auth")))
+          (:file "auth")
+          (:file "post")))
 
        ;; Webアプリケーション
        (:file "web")
@@ -80,7 +82,8 @@
        (:module "handler"
         :depends-on ("service" "middleware" "util" "web")
         :components (
-          (:file "auth")))
+          (:file "auth")
+          (:file "post")))
 
        ;; メインファイル
        (:file "main" :depends-on ("config" "db" "redis" "handler")))))
@@ -102,5 +105,6 @@
        (:module "handler"
         :depends-on ("setup" "fixtures" "http-helper")
         :components (
-          (:file "auth-test"))))))
+          (:file "auth-test")
+          (:file "post-test"))))))
   :perform (test-op (o c) (symbol-call :rove :run c)))
