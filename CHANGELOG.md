@@ -7,6 +7,89 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-11-30
+
+### Added - Post CRUD API (Phase 4)
+
+#### Post Model and Service
+- **src/model/post.lisp**: Post model with Mito ORM
+  - `post` table with `user_id`, `title`, `content`, `published` columns
+  - Index on `user_id` for efficient user-based queries
+  - Query functions: `find-post-by-id`, `find-posts-by-user-id`, `find-published-posts`
+  - Count functions: `count-published-posts`, `count-user-posts`
+  - `post-to-alist` for JSON serialization
+- **src/service/post.lisp**: Business logic layer
+  - `create-new-post`: Create post with validation
+  - `get-post`: Get post with permission check (public/owner access)
+  - `update-post`: Update post with ownership verification
+  - `delete-post`: Delete post with ownership verification
+  - `list-published-posts`: Paginated public post listing
+  - `list-user-posts`: User's public posts
+  - `list-my-posts`: User's own posts (including drafts)
+  - Title validation (1-200 chars, no whitespace-only)
+  - Content validation (1-100,000 chars, DoS protection)
+  - Pagination normalization (page max: 10,000, per_page max: 100)
+
+#### REST API Endpoints
+- **src/handler/post.lisp**: HTTP handlers
+  - `POST /api/posts` - Create post (auth required, 201 Created)
+  - `GET /api/posts` - List published posts (no auth)
+  - `GET /api/posts/:id` - Get post details (conditional auth)
+  - `PUT /api/posts/:id` - Update post (owner only)
+  - `DELETE /api/posts/:id` - Delete post (owner only)
+  - `GET /api/users/:user_id/posts` - User's public posts
+  - `GET /api/me/posts` - Own posts with filter (auth required)
+
+#### Error Types
+- **src/util/validation.lisp**: Added new error conditions
+  - `authorization-error`: 403 Forbidden (not owner)
+  - `not-found-error`: 404 Not Found (resource missing)
+
+#### Comprehensive Test Suite
+- **test/model-test.lisp**: Post model tests (12 test cases)
+  - CRUD operations, queries, filtering, counting
+- **test/service-test.lisp**: Post service tests (9 test cases)
+  - Authorization, validation, error handling
+- **test/handler/post-test.lisp**: HTTP integration tests (18 test cases)
+  - All endpoints, success/error scenarios
+  - Published/draft access control
+  - Pagination, filtering
+
+### Fixed - Makefile Test Runner Issue
+
+- **Makefile**: Fixed concurrent test runner conflict
+  - Problem: `make test` ran both `test-runner` and `test-watcher` simultaneously
+  - Cause: Same database used by both runners, causing duplicate key errors
+  - Solution: Run only `test-runner` service for `make test`
+  - `test-watcher` remains available via `make test-watch`
+
+### Verified - All Tests Passing
+
+Docker test suite fully operational (2025-11-30):
+
+- ✅ **6/6 test suites successful**
+  - voro.test.util
+  - voro.test.model (including Post)
+  - voro.test.service (including Post)
+  - voro.test.handler
+  - voro.test.handler.auth
+  - voro.test.handler.post (18 test cases)
+- ✅ **All Post API endpoints working**
+- ✅ **Authorization and permission checks verified**
+- ✅ **Pagination and filtering working**
+
+### Documentation
+
+- **docs/design/post-crud-api.md**: Updated to v2.3
+  - Complete API specification
+  - Implementation patterns documented
+  - Test plan with 18 handler test cases
+
+### Commits
+
+- Branch: `feature/post-crud-api`
+- `c6db949` feat: implement Post CRUD API
+
 ## [0.1.9] - 2025-11-26
 
 ### Changed - JSON Library Migration (Jonathan → Jzon)
