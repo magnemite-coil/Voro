@@ -24,7 +24,7 @@ test: test-backend
 test-backend:
 	@echo "========== Running backend tests in Docker =========="
 	@export HOST_UID=$$(id -u) HOST_GID=$$(id -g); \
-	docker compose -f docker-compose.test.yml up --build --abort-on-container-exit; \
+	docker compose -f docker-compose.test.yml up --build --abort-on-container-exit test-runner; \
 	EXIT_CODE=$$?; \
 	docker compose -f docker-compose.test.yml down -v; \
 	exit $$EXIT_CODE
