@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2025-11-30
+
+### Added - Published Parameter Test Coverage
+
+#### New Test Cases
+- **test/handler/post-test.lisp**: Added 2 test cases for comprehensive published parameter coverage
+  - `post-update-unpublish-test`: Verify changing published from true to false
+  - `post-update-no-publish-change-test`: Verify published remains unchanged when not included in request body
+
+These tests ensure the three states of published parameter (`t`, `nil`, `:not-specified`) are properly handled during post updates.
+
+#### Design Document Update
+- **docs/design/post-crud-api.md**: Updated to v2.4
+  - Changed `:keys` to `:indexes` for Mito index definition (matches implementation)
+  - Updated SXQL column references to underscore format (`:user_id`, `:created_at`)
+  - Updated `count-user-posts` to use `mito:count-dao` for `:all` case (optimization)
+  - Marked remaining tasks as completed
+
+### Verified - All Tests Passing
+
+- ✅ **20/20 post handler test cases** (was 18)
+- ✅ All 6 test suites passing
+
+### Commits
+
+- Branch: `docs/update-design-v2.4`
+- `40c3468` test(post): Add missing published parameter tests
+
 ## [0.2.0] - 2025-11-30
 
 ### Added - Post CRUD API (Phase 4)
@@ -50,7 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - CRUD operations, queries, filtering, counting
 - **test/service-test.lisp**: Post service tests (9 test cases)
   - Authorization, validation, error handling
-- **test/handler/post-test.lisp**: HTTP integration tests (18 test cases)
+- **test/handler/post-test.lisp**: HTTP integration tests (20 test cases)
   - All endpoints, success/error scenarios
   - Published/draft access control
   - Pagination, filtering
@@ -73,17 +101,17 @@ Docker test suite fully operational (2025-11-30):
   - voro.test.service (including Post)
   - voro.test.handler
   - voro.test.handler.auth
-  - voro.test.handler.post (18 test cases)
+  - voro.test.handler.post (20 test cases)
 - ✅ **All Post API endpoints working**
 - ✅ **Authorization and permission checks verified**
 - ✅ **Pagination and filtering working**
 
 ### Documentation
 
-- **docs/design/post-crud-api.md**: Updated to v2.3
+- **docs/design/post-crud-api.md**: Updated to v2.4
   - Complete API specification
   - Implementation patterns documented
-  - Test plan with 18 handler test cases
+  - Test plan with 20 handler test cases
 
 ### Commits
 
