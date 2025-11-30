@@ -251,6 +251,70 @@
                   (assert-status 200 status)
                   (assert-json-response body "data" "post"))))))))))
 
+(deftest post-update-unpublish-test
+  (testing "PUT /api/posts/:id - 公開投稿を非公開に変更"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            ;; 公開投稿を作成
+            (multiple-value-bind (create-body create-status create-headers)
+                (http-post "/api/posts"
+                          :json (list (cons :|title| "Public Post")
+                                     (cons :|content| "Content")
+                                     (cons :|published| t))
+                          :cookies (list (cons "session_id" session-id)))
+              (declare (ignore create-status create-headers))
+              (let* ((parsed (com.inuoe.jzon:parse create-body))
+                     (post-id (gethash "id" (gethash "post" (gethash "data" parsed)))))
+                ;; 非公開に変更（published: false）
+                (multiple-value-bind (body status headers)
+                    (http-put (format nil "/api/posts/~D" post-id)
+                             :json (list (cons :|published| nil))
+                             :cookies (list (cons "session_id" session-id)))
+                  (declare (ignore headers))
+                  (assert-status 200 status)
+                  ;; publishedがfalseになっていることを確認
+                  (let* ((result (com.inuoe.jzon:parse body))
+                         (post (gethash "post" (gethash "data" result)))
+                         (published (gethash "published" post)))
+                    (ok (null published) "published should be false")))))))))))
+
+(deftest post-update-no-publish-change-test
+  (testing "PUT /api/posts/:id - publishedキーなしで更新（publishedは変更されない）"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            ;; 公開投稿を作成
+            (multiple-value-bind (create-body create-status create-headers)
+                (http-post "/api/posts"
+                          :json (list (cons :|title| "Original Title")
+                                     (cons :|content| "Original Content")
+                                     (cons :|published| t))
+                          :cookies (list (cons "session_id" session-id)))
+              (declare (ignore create-status create-headers))
+              (let* ((parsed (com.inuoe.jzon:parse create-body))
+                     (post-id (gethash "id" (gethash "post" (gethash "data" parsed)))))
+                ;; タイトルのみ更新（publishedキーなし）
+                (multiple-value-bind (body status headers)
+                    (http-put (format nil "/api/posts/~D" post-id)
+                             :json (list (cons :|title| "Updated Title"))
+                             :cookies (list (cons "session_id" session-id)))
+                  (declare (ignore headers))
+                  (assert-status 200 status)
+                  ;; publishedがtrueのままであることを確認
+                  (let* ((result (com.inuoe.jzon:parse body))
+                         (post (gethash "post" (gethash "data" result)))
+                         (published (gethash "published" post))
+                         (title (gethash "title" post)))
+                    (ok (eq published t) "published should remain true")
+                    (ok (string= title "Updated Title") "title should be updated")))))))))))
+
 (deftest post-update-forbidden-test
   (testing "PUT /api/posts/:id - 他人の投稿更新→403"
     (with-test-environment
