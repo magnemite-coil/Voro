@@ -1,0 +1,43 @@
+/* TitleInput.module.css */
+.titleGroup {
+  margin-bottom: var(--spacing-lg);
+}
+
+.titleInput {
+  width: 100%;
+  font-size: var(--font-size-title);
+  font-weight: bold;
+  color: var(--neon-yellow);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: var(--spacing-sm) 0;
+  outline: none;
+  transition: border-color 0.2s ease;
+  text-shadow: var(--glow-yellow);
+}
+
+.titleInput::placeholder {
+  color: var(--text-muted);
+  text-shadow: none;
+}
+
+.titleInput:focus {
+  border-bottom-color: var(--neon-cyan);
+}
+
+.titleInput.loading {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.titleInput.hasError {
+  border-bottom-color: var(--danger);
+}
+
+.errorMessage {
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin-top: 8px;
+  text-shadow: 0 0 6px var(--danger);
+}

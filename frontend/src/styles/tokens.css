@@ -1,0 +1,64 @@
+/* styles/tokens.css */
+:root {
+  /* ===== 背景色 ===== */
+  --bg-primary: #262335;
+  --bg-secondary: #2a2139;
+  --bg-tertiary: #34294f;
+  --bg-hover: #3d3352;
+
+  /* ===== テキスト ===== */
+  --text-primary: #c9c5bc;
+  --text-secondary: #b8b8b8;
+  --text-muted: #848bbd;
+
+  /* ===== ボーダー ===== */
+  --border-color: #34294f;
+
+  /* ===== ネオンカラー ===== */
+  --neon-pink: #ff7edb;
+  --neon-cyan: #36f9f6;
+  --neon-yellow: #fede5d;
+  --neon-orange: #fe4450;
+  --neon-green: #72f1b8;
+  --neon-purple: #b381c5;
+
+  /* ===== 機能色 ===== */
+  --success: #72f1b8;
+  --warning: #fede5d;
+  --danger: #fe4450;
+
+  /* ===== フォント ===== */
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans JP', sans-serif;
+  --font-family-mono: Menlo, Monaco, 'Courier New', monospace;
+
+  /* ===== フォントサイズ ===== */
+  --font-size-title: 3rem;
+  --font-size-body: 0.95rem;
+  --font-size-label: 0.85rem;
+  --font-size-button: 1rem;
+
+  /* ===== スペーシング ===== */
+  --spacing-xs: 5px;
+  --spacing-sm: 10px;
+  --spacing-md: 15px;
+  --spacing-lg: 20px;
+  --spacing-xl: 30px;
+  --spacing-2xl: 40px;
+
+  /* ===== ボーダー半径 ===== */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-pill: 20px;
+
+  /* ===== ネオンエフェクト（text-shadow） ===== */
+  --glow-cyan: 0 0 8px var(--neon-cyan);
+  --glow-pink: 0 0 8px var(--neon-pink);
+  --glow-yellow: 0 0 10px var(--neon-yellow);
+  --glow-green: 0 0 8px var(--neon-green);
+
+  /* ===== ネオンエフェクト（box-shadow） ===== */
+  --shadow-cyan: 0 0 10px rgba(54, 249, 246, 0.3);
+  --shadow-pink: 0 0 10px rgba(255, 126, 219, 0.2);
+  --shadow-green: 0 0 8px rgba(114, 241, 184, 0.3);
+}
