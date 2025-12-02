@@ -7,6 +7,136 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-12-02
+
+### Added - Post Editor UI (Frontend Phase 4.5)
+
+#### Project Setup
+- **Vite + React 19 + TypeScript**: Modern frontend stack
+  - Vite 7.2 with React 19 support
+  - TypeScript with strict mode
+  - React Router v7 for client-side routing
+  - Vitest + MSW for testing
+
+#### Design System
+- **Synthwave '84 Theme**: Cyberpunk-inspired design tokens
+  - CSS Variables for colors, typography, spacing
+  - Global styles and CSS reset
+  - CSS Modules for component styling
+
+#### Common Components
+- **frontend/src/components/common/**:
+  - `Button`: Primary/secondary variants with loading state
+  - `Spinner`: Loading indicator
+  - `Toast`: Success/error/info notifications with auto-dismiss
+  - `ConfirmModal`: Unsaved changes confirmation dialog
+  - `Header`: Navigation with auth state
+  - `ProtectedRoute`: Auth-required route wrapper
+
+#### Post Editor
+- **frontend/src/components/post/**:
+  - `TitleInput`: Title field with character count (max 200)
+  - `ContentEditor`: Textarea with character count (max 100,000)
+- **frontend/src/pages/PostEditorPage/**:
+  - Create/Edit modes with dynamic routing
+  - Form validation (onBlur + submit)
+  - Unsaved changes warning (beforeunload + React Router blocker)
+
+#### Authentication
+- **frontend/src/contexts/AuthContext.tsx**:
+  - Login/logout functionality
+  - Session persistence with localStorage
+  - Auth state management
+- **frontend/src/contexts/NotificationContext.tsx**:
+  - Toast notification system
+  - Auto-dismiss with timer cleanup
+
+#### Custom Hooks
+- **frontend/src/hooks/**:
+  - `usePost`: Post CRUD operations with API integration
+  - `useNavigationBlocker`: React Router navigation blocking
+  - `useUnsavedChangesWarning`: Combined beforeunload + blocker
+
+#### Services
+- **frontend/src/services/api.ts**:
+  - Type-safe API client
+  - Error handling with ApiError class
+  - Credentials included for session cookies
+
+#### Validation
+- **frontend/src/utils/validation.ts**:
+  - Title validation (1-200 chars, not whitespace-only)
+  - Content validation (1-100,000 chars)
+  - Field-level error messages
+
+#### Testing
+- **Vitest + MSW**: Comprehensive test setup
+  - Mock Service Worker for API mocking
+  - Test helper with window.scrollTo mock for jsdom
+- **test/mocks/handlers.ts**: Common MSW handlers for API mocking
+- **test/mocks/server.ts**: MSW server setup
+
+### Added - Component and Integration Tests (2025-12-02)
+
+#### Component Tests
+- **TitleInput.test.tsx**: 8 test cases
+  - Placeholder and value display
+  - onChange callback
+  - Error message display and styling
+  - onValidate callback on blur
+  - Loading state (readonly, loading class)
+- **ContentEditor.test.tsx**: 9 test cases
+  - Same coverage as TitleInput
+  - Additional rows attribute test
+
+#### Integration Tests
+- **PostEditorPage.test.tsx**: 10 test cases
+  - Create Mode: UI render, button states, validation, create/publish
+  - Edit Mode: Load existing post, 404 handling, update
+  - API Error Handling: Server error notification
+
+#### Test Infrastructure
+- **test/setup.ts**: Added window.scrollTo mock for jsdom compatibility
+
+**Test Summary**: 40 tests total (all passing)
+- validation.test.ts: 13 tests
+- TitleInput.test.tsx: 8 tests
+- ContentEditor.test.tsx: 9 tests
+- PostEditorPage.test.tsx: 10 tests
+
+### Fixed - ESLint Warnings in Context Hooks
+
+- **AuthContext.tsx**: Added eslint-disable comments for intentional patterns
+  - `react-hooks/set-state-in-effect`: Initial auth check is intentional
+  - `react-refresh/only-export-components`: useAuth hook export
+- **NotificationContext.tsx**: Fixed useEffect cleanup
+  - Capture ref value before cleanup function
+  - Prevents stale ref access on unmount
+  - Added `react-refresh/only-export-components` disable
+
+### Verified - All Tests Passing
+
+Frontend test suite fully operational (2025-12-02):
+
+- ✅ **Frontend tests**: 40/40 passed
+  - validation.test.ts: 13 tests
+  - TitleInput.test.tsx: 8 tests
+  - ContentEditor.test.tsx: 9 tests
+  - PostEditorPage.test.tsx: 10 tests
+- ✅ **ESLint**: No errors
+- ✅ **TypeScript**: No type errors
+- ✅ **Build**: Successful (dist/ output)
+  - `index.html`: 0.46 kB
+  - `index.css`: 10.32 kB (gzip: 2.57 kB)
+  - `index.js`: 293.62 kB (gzip: 94.44 kB)
+
+### Commits
+
+- Branch: `feat/post-editor-ui`
+- `fbae2ba` feat(frontend): Add post editor UI with React 19 + Vite
+- `86db17b` fix(frontend): Fix ESLint warnings in context hooks
+- `6985cc9` test(frontend): Add component and integration tests for post editor
+
 ## [0.2.1] - 2025-11-30
 
 ### Added - Published Parameter Test Coverage
