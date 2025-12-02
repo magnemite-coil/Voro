@@ -31,9 +31,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   // アンマウント時に全タイマーをクリア
   useEffect(() => {
+    const timerIds = timerIdsRef.current;
     return () => {
-      timerIdsRef.current.forEach((timerId) => clearTimeout(timerId));
-      timerIdsRef.current.clear();
+      timerIds.forEach((timerId) => clearTimeout(timerId));
+      timerIds.clear();
     };
   }, []);
 
@@ -70,6 +71,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useNotification() {
   const context = useContext(NotificationContext);
   if (!context) {

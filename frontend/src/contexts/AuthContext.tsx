@@ -117,6 +117,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const abortController = new AbortController();
+    // 初期マウント時の認証チェックは意図的な設計
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     checkAuth(abortController.signal);
 
     return () => {
@@ -168,6 +170,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
