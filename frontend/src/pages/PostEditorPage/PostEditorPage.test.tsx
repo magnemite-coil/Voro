@@ -124,7 +124,7 @@ describe('PostEditorPage - Create Mode', () => {
     expect(screen.getByText('公開する')).toBeDisabled();
   });
 
-  it('enables buttons when form has content', async () => {
+  it('enables draft save button when form has content (publish stays disabled in create mode)', async () => {
     renderWithProviders(<PostEditorPage mode="create" />);
 
     await waitFor(() => {
@@ -141,7 +141,8 @@ describe('PostEditorPage - Create Mode', () => {
     );
 
     expect(screen.getByText('下書き保存')).not.toBeDisabled();
-    expect(screen.getByText('公開する')).not.toBeDisabled();
+    // 新規作成モードでは公開ボタンは常に非アクティブ（下書き保存後に有効になる）
+    expect(screen.getByText('公開する')).toBeDisabled();
   });
 
   it('shows validation error when submitting empty title', async () => {
@@ -192,21 +193,81 @@ describe('PostEditorPage - Create Mode', () => {
     });
   });
 
-  it('publishes a post when publish button is clicked', async () => {
-    renderWithProviders(<PostEditorPage mode="create" />);
+  it('publishes a draft post when publish button is clicked in edit mode', async () => {
+    // 下書き状態の投稿データを返すようにモック
+    server.use(
+      http.get('/api/posts/1', () => {
+        return HttpResponse.json({
+          success: true,
+          data: {
+            post: {
+              id: 1,
+              user_id: 1,
+              title: 'Draft Post',
+              content: 'Draft content',
+              published: false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          },
+        });
+      }),
+      http.put('/api/posts/1', () => {
+        return HttpResponse.json({
+          success: true,
+          data: {
+            post: {
+              id: 1,
+              user_id: 1,
+              title: 'Draft Post',
+              content: 'Draft content',
+              published: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          },
+        });
+      })
+    );
 
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/posts/:id/edit',
+          element: <PostEditorPage mode="edit" />,
+        },
+      ],
+      {
+        initialEntries: ['/posts/1/edit'],
+      }
+    );
+
+    localStorage.setItem(
+      'voro_auth',
+      JSON.stringify({
+        userId: 1,
+        username: 'testuser',
+      })
+    );
+
+    render(
+      <AuthProvider>
+        <NotificationProvider>
+          <RouterProvider router={router} />
+          <Toast />
+        </NotificationProvider>
+      </AuthProvider>
+    );
+
+    // 投稿データが読み込まれるのを待つ
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('記事のタイトル')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Draft Post')).toBeInTheDocument();
     });
 
-    await userEvent.type(
-      screen.getByPlaceholderText('記事のタイトル'),
-      'Test Post'
-    );
-    await userEvent.type(
-      screen.getByPlaceholderText('Markdownで本文を書く...'),
-      'Test content'
-    );
+    // 下書き状態で変更なしなら公開ボタンがアクティブ
+    await waitFor(() => {
+      expect(screen.getByText('公開する')).not.toBeDisabled();
+    });
 
     await userEvent.click(screen.getByText('公開する'));
 

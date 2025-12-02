@@ -56,12 +56,24 @@ export function PostEditorPage({ mode }: PostEditorPageProps) {
     content?: string;
     general?: string;
   }>({});
+  const [showNewPostConfirm, setShowNewPostConfirm] = useState(false);
 
   // 編集モード: 元データの保持（isDirty判定用）
   const [originalPost, setOriginalPost] = useState<Post | null>(null);
 
   // usePost hook から投稿データを取得
   const { post, isLoading, error, createPost, updatePost } = usePost({ postId });
+
+  // 新規作成モード: フォームをリセット
+  useEffect(() => {
+    if (mode === 'create') {
+      setTitle('');
+      setContent('');
+      setPublished(false);
+      setOriginalPost(null);
+      setErrors({});
+    }
+  }, [mode]);
 
   // 編集モード: 取得したデータでフォームを初期化
   useEffect(() => {
@@ -88,8 +100,8 @@ export function PostEditorPage({ mode }: PostEditorPageProps) {
   }, [mode, title, content, published, originalPost]);
 
   // 未保存変更警告
-  useUnsavedChangesWarning(isDirty);
-  const { isBlocked, proceed, reset } = useNavigationBlocker(isDirty);
+  useUnsavedChangesWarning(isDirty && !isSubmitting);
+  const { isBlocked, proceed, reset } = useNavigationBlocker(isDirty, isSubmitting);
 
   // バリデーション
   const handleTitleBlur = useCallback(() => {
@@ -162,6 +174,31 @@ export function PostEditorPage({ mode }: PostEditorPageProps) {
     }
   };
 
+  // 新規作成ボタンクリック
+  const handleNewPostClick = useCallback(() => {
+    if (isDirty) {
+      setShowNewPostConfirm(true);
+    } else if (mode === 'edit') {
+      navigate('/posts/new');
+    }
+  }, [isDirty, mode, navigate]);
+
+  const handleNewPostConfirm = useCallback(() => {
+    setShowNewPostConfirm(false);
+    if (mode === 'create') {
+      setTitle('');
+      setContent('');
+      setPublished(false);
+      setErrors({});
+    } else {
+      navigate('/posts/new');
+    }
+  }, [mode, navigate]);
+
+  const handleNewPostCancel = useCallback(() => {
+    setShowNewPostConfirm(false);
+  }, []);
+
   // エラー状態の表示
   if (mode === 'edit' && error) {
     return (
@@ -204,12 +241,13 @@ export function PostEditorPage({ mode }: PostEditorPageProps) {
     <>
       <Header
         activeTab="new"
+        onNewPostClick={handleNewPostClick}
         actions={
           <Button
             variant="primary"
             onClick={handlePublish}
             isLoading={isSubmitting}
-            disabled={!isDirty}
+            disabled={mode === 'create' || isDirty || published}
           >
             公開する
           </Button>
@@ -252,6 +290,13 @@ export function PostEditorPage({ mode }: PostEditorPageProps) {
         message="保存されていない変更があります。ページを離れますか？"
         onConfirm={proceed}
         onCancel={reset}
+      />
+      <ConfirmModal
+        isOpen={showNewPostConfirm}
+        title="新規作成"
+        message="保存されていない変更があります。新しい記事を作成しますか？"
+        onConfirm={handleNewPostConfirm}
+        onCancel={handleNewPostCancel}
       />
     </>
   );

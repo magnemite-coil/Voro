@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2025-12-03
+
+### Fixed - Post Editor Bugs and UX Improvements
+
+#### Navigation and Form State
+- **useNavigationBlocker.ts**: Skip navigation blocker during save operations
+  - Prevents false warning dialog when saving/publishing posts
+  - Uses `skipBlockerRef` to temporarily disable blocker during API calls
+- **PostEditorPage.tsx**: Reset form when switching to create mode
+  - Clears title, content, and errors when navigating from edit to create
+  - Prevents stale data from previous edits appearing in new post form
+
+#### New Post Creation Flow
+- **Header.tsx**: Added `onNewPostClick` handler for same-page navigation warning
+  - Shows confirmation modal when clicking "新規作成" with unsaved changes
+  - Properly integrates with existing unsaved changes detection
+- **PostEditorPage.tsx**: Improved publish button logic
+  - Publish button now disabled in create mode (must save as draft first)
+  - Only active when editing a saved draft (not yet published)
+  - Prevents confusing UX where publish was available before first save
+
+#### Backend Authentication
+- **src/handler/auth.lisp**: Trim whitespace from login inputs
+  - Username and password are trimmed before validation
+  - Prevents login failures due to accidental leading/trailing spaces
+
+### Changed - Test Updates
+
+- **PostEditorPage.test.tsx**: Updated tests for new publish button behavior
+  - Publish button is now disabled in create mode
+  - Added test for publishing draft post in edit mode
+  - 11 test cases (was 10)
+
+### Commits
+
+- Branch: `fix/post-editor-bug`
+- `1c205fb` fix: Fix post editor bugs and login input trimming
+- `60558cc` fix: Add new post confirmation and improve publish button logic
+- `fd31ec9` test: Update PostEditorPage tests for new publish button behavior
+
 ## [0.3.0] - 2025-12-02
 
 ### Added - Post Editor UI (Frontend Phase 4.5)
