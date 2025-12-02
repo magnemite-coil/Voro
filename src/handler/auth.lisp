@@ -71,8 +71,10 @@
 
 ;; ログイン
 (defroute (*app* "/api/auth/login" :method :POST) ()
-  (let ((username (get-request-body-param "username"))
-        (password (get-request-body-param "password")))
+  (let ((username (let ((val (get-request-body-param "username")))
+                    (when val (string-trim '(#\Space #\Tab) val))))
+        (password (let ((val (get-request-body-param "password")))
+                    (when val (string-trim '(#\Space #\Tab) val)))))
 
     ;; 入力検証
     (if (not (and username password))

@@ -63,6 +63,17 @@ export function PostEditorPage({ mode }: PostEditorPageProps) {
   // usePost hook から投稿データを取得
   const { post, isLoading, error, createPost, updatePost } = usePost({ postId });
 
+  // 新規作成モード: フォームをリセット
+  useEffect(() => {
+    if (mode === 'create') {
+      setTitle('');
+      setContent('');
+      setPublished(false);
+      setOriginalPost(null);
+      setErrors({});
+    }
+  }, [mode]);
+
   // 編集モード: 取得したデータでフォームを初期化
   useEffect(() => {
     if (post) {
@@ -88,8 +99,8 @@ export function PostEditorPage({ mode }: PostEditorPageProps) {
   }, [mode, title, content, published, originalPost]);
 
   // 未保存変更警告
-  useUnsavedChangesWarning(isDirty);
-  const { isBlocked, proceed, reset } = useNavigationBlocker(isDirty);
+  useUnsavedChangesWarning(isDirty && !isSubmitting);
+  const { isBlocked, proceed, reset } = useNavigationBlocker(isDirty, isSubmitting);
 
   // バリデーション
   const handleTitleBlur = useCallback(() => {

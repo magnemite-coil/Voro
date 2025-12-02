@@ -8,10 +8,10 @@ interface UseNavigationBlockerReturn {
   reset: () => void;
 }
 
-export function useNavigationBlocker(isDirty: boolean): UseNavigationBlockerReturn {
+export function useNavigationBlocker(isDirty: boolean, skipBlock = false): UseNavigationBlockerReturn {
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
-      isDirty && currentLocation.pathname !== nextLocation.pathname
+      isDirty && !skipBlock && currentLocation.pathname !== nextLocation.pathname
   );
 
   const proceed = useCallback(() => {
