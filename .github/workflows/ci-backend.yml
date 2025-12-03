@@ -99,6 +99,7 @@ jobs:
           LOG_LEVEL: debug
         run: |
           sbcl --non-interactive \
+               --load ~/quicklisp/setup.lisp \
                --eval "(ql:quickload :voro/test)" \
                --eval "(asdf:test-system :voro/test)"
 
