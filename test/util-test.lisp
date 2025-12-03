@@ -13,7 +13,9 @@
                 :plist-to-hash-table
                 :to-json
                 :to-json-plist
-                :parse-json))
+                :parse-json)
+  (:import-from :voro.util.request
+                :get-body-param))
 
 (in-package :voro.test.util)
 
@@ -201,3 +203,24 @@
     (ok (eq nil (parse-json "false")))
     (ok (eq 'null (parse-json "null")))
     (ok (= 42 (parse-json "42")))))
+
+;;; リクエストユーティリティテスト
+
+(deftest test-get-body-param
+  (testing "キーが存在する場合は値を返す"
+    (let ((params '(("username" . "testuser") ("email" . "test@example.com"))))
+      (ok (equal "testuser" (get-body-param params "username")))
+      (ok (equal "test@example.com" (get-body-param params "email")))))
+
+  (testing "キーが存在しない場合はNILを返す"
+    (let ((params '(("username" . "testuser"))))
+      (ok (null (get-body-param params "nonexistent")))))
+
+  (testing "空のalistの場合はNILを返す"
+    (ok (null (get-body-param nil "anykey"))))
+
+  (testing "キーの比較は文字列比較（string=）"
+    (let ((params '(("Username" . "test"))))
+      ;; 大文字小文字を区別する
+      (ok (null (get-body-param params "username")))
+      (ok (equal "test" (get-body-param params "Username"))))))

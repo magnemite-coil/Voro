@@ -15,15 +15,17 @@
                 :log-error)
   (:import-from :voro.util.validation
                 :validation-error
-                :validation-error-message))
+                :validation-error-message)
+  (:import-from :voro.util.request
+                :get-body-param))
 
 (in-package :voro.handler.auth)
 
 ;;; ヘルパー関数
 
 (defun get-request-body-param (key)
-  "リクエストボディからパラメータを取得"
-  (cdr (assoc key (lack.request:request-body-parameters *request*) :test #'string=)))
+  "リクエストボディからパラメータを取得（共通ユーティリティのラッパー）"
+  (get-body-param (lack.request:request-body-parameters *request*) key))
 
 (defun make-session-cookie-header (session-id)
   "セッションCookie用のヘッダーを生成"
