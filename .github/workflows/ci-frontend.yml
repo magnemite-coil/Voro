@@ -1,0 +1,57 @@
+name: Frontend CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+
+    # 作業ディレクトリ設定
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Node.js セットアップ
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: npm ci
+
+      # 静的解析
+      - name: Run ESLint
+        run: npm run lint
+
+      # ビルド（TypeScript型チェック含む）
+      - name: Build (TypeScript + Vite)
+        run: npm run build
+
+      # テスト実行
+      - name: Run tests
+        timeout-minutes: 10
+        run: npm run test:run
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-results
+          path: frontend/coverage/
+          retention-days: 7
+          if-no-files-found: ignore
