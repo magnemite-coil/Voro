@@ -51,12 +51,10 @@ jobs:
             /usr/local/lib/sbcl
           key: sbcl-2.5.9-${{ runner.os }}
 
-      - name: Install SBCL
+      - name: Install SBCL and dependencies
         run: |
-          if [ ! -f /usr/local/bin/sbcl ]; then
-            sudo apt-get update
-            sudo apt-get install -y sbcl
-          fi
+          sudo apt-get update
+          sudo apt-get install -y sbcl libev-dev
 
       - name: Cache Quicklisp and FASL
         uses: actions/cache@v4
