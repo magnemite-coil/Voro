@@ -7,38 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed - Request Utilities Refactoring
+### Changed - Remove Duplicate Code in Handler Layer
 
-#### Code Consolidation
-- **src/util/request.lisp**: New utility module for request body operations
-  - `get-body-param`: Extract parameter from request body alist
-  - Caveman2-independent design (receives body-parameters as argument)
-  - Improves testability with pure function approach
+#### Middleware Enhancement
+- **src/middleware/session.lisp**: Added `get-current-user-id` function
+  - Extracts user_id from request session cookie
+  - Returns user_id (integer) or NIL (unauthenticated)
+  - Takes `request` as argument (Caveman2-independent design)
+  - Added to package exports
 
-#### Handler Updates
-- **src/handler/auth.lisp**: Use shared utility
-  - Import `get-body-param` from `voro.util.request`
-  - Local `get-request-body-param` becomes wrapper function
+#### Handler Refactoring
+- **src/handler/auth.lisp**: Removed duplicate code
+  - Deleted `get-request-body-param` wrapper function
+  - Use `get-body-param` from `voro.util.request` directly
   - No changes to external API behavior
-- **src/handler/post.lisp**: Use shared utility
-  - Same changes as auth.lisp
-  - Updated comments to document consolidation status
+- **src/handler/post.lisp**: Removed duplicate code
+  - Deleted `get-request-body-param` wrapper function
+  - Deleted `get-current-user-id` local function
+  - Changed import from `get-session-user-id` to `get-current-user-id`
+  - Use `get-body-param` from `voro.util.request` directly
+  - Updated comments to reflect consolidation
 
-#### Build System
-- **voro.asd**: Added `request` to util module components
+#### Design Principles
+- Layer structure compliance: handler → service → model
+- Separation of concerns: common logic in appropriate layers
+- No breaking changes: existing behavior preserved
+
+#### Documentation Updates
+- **.claude/project/patterns.md**: Fixed remaining outdated code examples
+  - Line 91: Updated `(middleware:get-session-user-id)` to `(middleware:get-current-user-id *request*)`
+  - Line 123: Updated `(middleware:get-session-user-id)` to `(middleware:get-current-user-id *request*)`
+- **docs/design/refactor-remove-duplicate-code.md**: Added Section 10 "Remaining Tasks"
+  - Documented implementation gaps found during design review
+  - Marked as completed after fixes applied
 
 #### Test Coverage
-- **test/util-test.lisp**: Added 4 test cases for `get-body-param`
-  - Key exists: returns value
-  - Key missing: returns NIL
-  - Empty alist: returns NIL
-  - Case-sensitive key comparison
+- All 6 backend test suites passing
+- Manual API testing verified:
+  - Authentication flow (register/login/logout)
+  - Post CRUD operations
+  - Error cases (401/400/403/404)
 
 ### Commits
 
-- Branch: `refactor/extract-request-utils`
-- `9ac29ed` refactor: Extract get-body-param to voro.util.request
-- `3ea68d0` test: Add unit tests for get-body-param utility function
+- Branch: `refactor/remove-duplicate-code`
+- `0db29c3` refactor: Remove duplicate code in handler layer
+- (pending) docs: Fix remaining patterns.md outdated examples
 
 ## [0.3.1] - 2025-12-03
 

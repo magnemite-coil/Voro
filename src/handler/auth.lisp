@@ -23,10 +23,6 @@
 
 ;;; ヘルパー関数
 
-(defun get-request-body-param (key)
-  "リクエストボディからパラメータを取得（共通ユーティリティのラッパー）"
-  (get-body-param (lack.request:request-body-parameters *request*) key))
-
 (defun make-session-cookie-header (session-id)
   "セッションCookie用のヘッダーを生成"
   (list :set-cookie
@@ -43,9 +39,9 @@
 
 ;; ユーザー登録
 (defroute (*app* "/api/auth/register" :method :POST) ()
-  (let ((username (get-request-body-param "username"))
-        (password (get-request-body-param "password"))
-        (email (get-request-body-param "email")))
+  (let ((username (get-body-param (lack.request:request-body-parameters *request*) "username"))
+        (password (get-body-param (lack.request:request-body-parameters *request*) "password"))
+        (email (get-body-param (lack.request:request-body-parameters *request*) "email")))
 
     ;; 入力検証
     (if (not (and username password))
@@ -73,9 +69,9 @@
 
 ;; ログイン
 (defroute (*app* "/api/auth/login" :method :POST) ()
-  (let ((username (let ((val (get-request-body-param "username")))
+  (let ((username (let ((val (get-body-param (lack.request:request-body-parameters *request*) "username")))
                     (when val (string-trim '(#\Space #\Tab) val))))
-        (password (let ((val (get-request-body-param "password")))
+        (password (let ((val (get-body-param (lack.request:request-body-parameters *request*) "password")))
                     (when val (string-trim '(#\Space #\Tab) val)))))
 
     ;; 入力検証

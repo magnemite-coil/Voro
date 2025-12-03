@@ -15,7 +15,7 @@
   (:import-from :voro.model.user
                 :find-user-by-id)
   (:import-from :voro.middleware.session
-                :get-session-user-id)
+                :get-current-user-id)
   (:import-from :voro.util.response
                 :response-success
                 :response-error)
@@ -34,20 +34,14 @@
 (in-package :voro.handler.post)
 
 ;;; ヘルパー関数
-;;; get-request-body-param は voro.util.request に共通化済み。
 ;;; 以下の関数は post.lisp 固有（他のハンドラーで必要になった時点で共通化を検討）:
 ;;; - get-query-param
 ;;; - parse-integer-param
-;;; - get-current-user-id
 ;;;
 ;;; JSONパース: Lack の http-body ミドルウェア（内部でYason使用）がJSONリクエストを自動的にパースする。
 ;;; パース結果は文字列キーのalistとして request-body-parameters に格納される。
 ;;; （例: "title" → "投稿タイトル", "published" → t または nil）
 ;;; 注意: JSONのboolean値（true/false）はYasonによりLispの t/nil に変換される（文字列ではない）
-
-(defun get-request-body-param (key)
-  "リクエストボディからパラメータを取得（共通ユーティリティのラッパー）"
-  (get-body-param (lack.request:request-body-parameters *request*) key))
 
 (defun get-query-param (key &optional default)
   "クエリパラメータを取得（post.lisp で新規追加）"
@@ -61,14 +55,6 @@
         (error () default))
       default))
 
-(defun get-current-user-id ()
-  "現在のセッションからuser_idを取得
-   既存のauth.lispと同じパターンを使用"
-  (let* ((cookies (lack.request:request-cookies *request*))
-         (session-id (cdr (assoc "session_id" cookies :test #'string=))))
-    (when session-id
-      (get-session-user-id session-id))))
-
 (defun posts-to-json (posts)
   "投稿リストをJSON用形式に変換"
   (map 'list #'post-to-alist posts))
@@ -77,15 +63,15 @@
 
 ;; 投稿作成
 (defroute (*app* "/api/posts" :method :POST) ()
-  (let ((user-id (get-current-user-id)))
+  (let ((user-id (get-current-user-id *request*)))
     ;; 認証チェック
     (if (not user-id)
         (response-error 401 "Authentication required")
 
         ;; 認証済み
-        (let ((title (get-request-body-param "title"))
-              (content (get-request-body-param "content"))
-              (published (get-request-body-param "published")))
+        (let ((title (get-body-param (lack.request:request-body-parameters *request*) "title"))
+              (content (get-body-param (lack.request:request-body-parameters *request*) "content"))
+              (published (get-body-param (lack.request:request-body-parameters *request*) "published")))
 
           ;; 入力検証
           (if (not (and title content))
@@ -126,7 +112,7 @@
 ;; 投稿詳細取得
 (defroute (*app* "/api/posts/:id" :method :GET) (&key id)
   (let ((post-id (parse-integer-param id))
-        (user-id (get-current-user-id)))
+        (user-id (get-current-user-id *request*)))
 
     (if (not post-id)
         (response-error 400 "Invalid post ID")
@@ -143,14 +129,14 @@
 
 ;; 投稿更新
 (defroute (*app* "/api/posts/:id" :method :PUT) (&key id)
-  (let ((user-id (get-current-user-id)))
+  (let ((user-id (get-current-user-id *request*)))
     ;; 認証チェック
     (if (not user-id)
         (response-error 401 "Authentication required")
 
         (let* ((post-id (parse-integer-param id))
-               (title (get-request-body-param "title"))
-               (content (get-request-body-param "content"))
+               (title (get-body-param (lack.request:request-body-parameters *request*) "title"))
+               (content (get-body-param (lack.request:request-body-parameters *request*) "content"))
                (body-params (lack.request:request-body-parameters *request*))
                (published-entry (assoc "published" body-params :test #'string=)))
 
@@ -191,7 +177,7 @@
 
 ;; 投稿削除
 (defroute (*app* "/api/posts/:id" :method :DELETE) (&key id)
-  (let ((user-id (get-current-user-id)))
+  (let ((user-id (get-current-user-id *request*)))
     ;; 認証チェック
     (if (not user-id)
         (response-error 401 "Authentication required")
@@ -242,7 +228,7 @@
 
 ;; 自分の投稿一覧
 (defroute (*app* "/api/me/posts" :method :GET) ()
-  (let ((user-id (get-current-user-id)))
+  (let ((user-id (get-current-user-id *request*)))
     ;; 認証チェック
     (if (not user-id)
         (response-error 401 "Authentication required")
