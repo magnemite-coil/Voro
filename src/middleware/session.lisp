@@ -14,6 +14,7 @@
    :generate-session-id
    :create-session
    :get-session-user-id
+   :get-current-user-id
    :delete-session
    :session-exists-p))
 
@@ -82,3 +83,11 @@
 (defun session-exists-p (session-id)
   "セッションが存在するか確認"
   (not (null (get-session-user-id session-id))))
+
+(defun get-current-user-id (request)
+  "リクエストからセッションのuser_idを取得
+   戻り値: user_id (整数) または NIL（未認証の場合）"
+  (let* ((cookies (lack.request:request-cookies request))
+         (session-id (cdr (assoc "session_id" cookies :test #'string=))))
+    (when session-id
+      (get-session-user-id session-id))))
