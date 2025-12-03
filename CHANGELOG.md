@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - Request Utilities Refactoring
+
+#### Code Consolidation
+- **src/util/request.lisp**: New utility module for request body operations
+  - `get-body-param`: Extract parameter from request body alist
+  - Caveman2-independent design (receives body-parameters as argument)
+  - Improves testability with pure function approach
+
+#### Handler Updates
+- **src/handler/auth.lisp**: Use shared utility
+  - Import `get-body-param` from `voro.util.request`
+  - Local `get-request-body-param` becomes wrapper function
+  - No changes to external API behavior
+- **src/handler/post.lisp**: Use shared utility
+  - Same changes as auth.lisp
+  - Updated comments to document consolidation status
+
+#### Build System
+- **voro.asd**: Added `request` to util module components
+
+#### Test Coverage
+- **test/util-test.lisp**: Added 4 test cases for `get-body-param`
+  - Key exists: returns value
+  - Key missing: returns NIL
+  - Empty alist: returns NIL
+  - Case-sensitive key comparison
+
+### Commits
+
+- Branch: `refactor/extract-request-utils`
+- `9ac29ed` refactor: Extract get-body-param to voro.util.request
+- `3ea68d0` test: Add unit tests for get-body-param utility function
+
 ## [0.3.1] - 2025-12-03
 
 ### Fixed - Post Editor Bugs and UX Improvements
