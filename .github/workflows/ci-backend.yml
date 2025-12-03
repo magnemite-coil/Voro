@@ -81,6 +81,10 @@ jobs:
             rm quicklisp.lisp
           fi
 
+      - name: Register project with Quicklisp
+        run: |
+          ln -s ${{ github.workspace }} ~/quicklisp/local-projects/voro
+
       - name: Run backend tests
         timeout-minutes: 15
         env:
