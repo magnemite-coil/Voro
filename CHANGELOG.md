@@ -33,6 +33,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Separation of concerns: common logic in appropriate layers
 - No breaking changes: existing behavior preserved
 
+#### Documentation Updates
+- **.claude/project/patterns.md**: Fixed remaining outdated code examples
+  - Line 91: Updated `(middleware:get-session-user-id)` to `(middleware:get-current-user-id *request*)`
+  - Line 123: Updated `(middleware:get-session-user-id)` to `(middleware:get-current-user-id *request*)`
+- **docs/design/refactor-remove-duplicate-code.md**: Added Section 10 "Remaining Tasks"
+  - Documented implementation gaps found during design review
+  - Marked as completed after fixes applied
+
 #### Test Coverage
 - All 6 backend test suites passing
 - Manual API testing verified:
@@ -44,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Branch: `refactor/remove-duplicate-code`
 - `0db29c3` refactor: Remove duplicate code in handler layer
+- (pending) docs: Fix remaining patterns.md outdated examples
 
 ## [0.3.1] - 2025-12-03
 
