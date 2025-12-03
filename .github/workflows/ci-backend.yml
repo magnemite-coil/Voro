@@ -51,12 +51,10 @@ jobs:
             /usr/local/lib/sbcl
           key: sbcl-2.5.9-${{ runner.os }}
 
-      - name: Install SBCL
+      - name: Install SBCL and dependencies
         run: |
-          if [ ! -f /usr/local/bin/sbcl ]; then
-            sudo apt-get update
-            sudo apt-get install -y sbcl
-          fi
+          sudo apt-get update
+          sudo apt-get install -y sbcl libev-dev
 
       - name: Cache Quicklisp and FASL
         uses: actions/cache@v4
@@ -77,13 +75,13 @@ jobs:
             sbcl --non-interactive \
                  --load quicklisp.lisp \
                  --eval "(quicklisp-quickstart:install :path \"$HOME/quicklisp/\")"
-            echo '#-quicklisp
-(let ((quicklisp-init (merge-pathnames "quicklisp/setup.lisp"
-                                       (user-homedir-pathname))))
-  (when (probe-file quicklisp-init)
-    (load quicklisp-init)))' >> ~/.sbclrc
+            printf '%s\n' '#-quicklisp' '(let ((quicklisp-init (merge-pathnames "quicklisp/setup.lisp"' '                                       (user-homedir-pathname))))' '  (when (probe-file quicklisp-init)' '    (load quicklisp-init)))' >> ~/.sbclrc
             rm quicklisp.lisp
           fi
+
+      - name: Register project with Quicklisp
+        run: |
+          ln -s ${{ github.workspace }} ~/quicklisp/local-projects/voro
 
       - name: Run backend tests
         timeout-minutes: 15
