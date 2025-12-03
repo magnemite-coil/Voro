@@ -26,19 +26,19 @@
                 :validation-error-message
                 :authorization-error
                 :not-found-error
-                :not-found-error-message))
+                :not-found-error-message)
+  (:import-from :voro.util.request
+                :get-body-param))
 ;; 注意: authorization-error-message は現在未使用（403では固定メッセージ "Forbidden" を返す）
 
 (in-package :voro.handler.post)
 
 ;;; ヘルパー関数
-;;; 注意: get-request-body-param は auth.lisp にも同様の定義がある。
-;;; 将来的に voro.util.request 等に共通化することを検討するが、
-;;; 現時点では各ハンドラーファイル内にローカル定義する方針とする。
-;;; （共通化は別タスクとして扱う）
-;;;
-;;; get-query-param, parse-integer-param は post.lisp で新規追加。
-;;; 今後他のハンドラーでも必要になった場合に共通化を検討する。
+;;; get-request-body-param は voro.util.request に共通化済み。
+;;; 以下の関数は post.lisp 固有（他のハンドラーで必要になった時点で共通化を検討）:
+;;; - get-query-param
+;;; - parse-integer-param
+;;; - get-current-user-id
 ;;;
 ;;; JSONパース: Lack の http-body ミドルウェア（内部でYason使用）がJSONリクエストを自動的にパースする。
 ;;; パース結果は文字列キーのalistとして request-body-parameters に格納される。
@@ -46,10 +46,8 @@
 ;;; 注意: JSONのboolean値（true/false）はYasonによりLispの t/nil に変換される（文字列ではない）
 
 (defun get-request-body-param (key)
-  "リクエストボディからパラメータを取得
-   注意: auth.lisp にも同一の定義あり
-   JSONリクエストの場合、キーは文字列（例: \"title\"）"
-  (cdr (assoc key (lack.request:request-body-parameters *request*) :test #'string=)))
+  "リクエストボディからパラメータを取得（共通ユーティリティのラッパー）"
+  (get-body-param (lack.request:request-body-parameters *request*) key))
 
 (defun get-query-param (key &optional default)
   "クエリパラメータを取得（post.lisp で新規追加）"

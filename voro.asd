@@ -49,7 +49,8 @@
           (:file "log")
           (:file "response")
           (:file "crypto")
-          (:file "validation")))
+          (:file "validation")
+          (:file "request")))
 
        ;; データベース
        (:file "db" :depends-on ("config" "util"))
