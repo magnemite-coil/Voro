@@ -7,6 +7,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Test Coverage Expansion
+
+#### New Test File
+- **test/util/response-test.lisp**: Unit tests for response utilities
+  - `json-response`: Basic response, additional headers, nested alist, empty body
+  - `response-success`: Basic success, custom status, headers, nested data, arrays, nil data
+  - `response-error`: Basic error, error-id, no error-id, HTTP status codes, headers
+  - 17 test cases total
+
+#### Validation Boundary Tests (test/util-test.lisp)
+- **test-validate-password-edge-cases**: 8 new test cases
+  - 7/8 character boundary tests
+  - 100 character long password
+  - Special characters, spaces, Japanese characters
+  - Numbers only (fail), letters only (fail)
+- **test-validate-username-edge-cases**: 8 new test cases
+  - 2/3/50/51 character boundary tests
+  - Underscore (pass), hyphen (fail)
+  - Japanese characters (fail), starting with number (fail)
+- **test-validate-email-edge-cases**: 5 new test cases
+  - 254/255 character boundary tests
+  - Subdomains, @ position validation
+
+#### Post Service Edge Case Tests (test/service-test.lisp)
+- **test-create-new-post-edge-cases**: 10 new test cases
+  - Title: empty/1/200/201 character boundaries, whitespace-only
+  - Content: empty/1/10000/100000/100001 character boundaries
+- **test-create-new-post-security**: 2 test cases
+  - XSS script tag storage (stored as-is for frontend escaping)
+  - SQL injection string storage (parameterized queries protect)
+- **test-list-published-posts-pagination**: 5 test cases
+  - page=0/-1 normalized to 1
+  - per_page=0 normalized to 1, per_page=101 capped at 100
+  - page=10001 capped at 10000
+
+#### HTTP Integration Tests (test/handler/post-test.lisp)
+- **post-list-pagination-edge-cases-test**: 4 test cases
+  - page=0/10001 normalization, per_page=200 cap, empty array
+- **post-get-invalid-id-test**: 3 test cases
+  - String ID (400), decimal ID (400), large non-existent ID (404)
+- **post-create-edge-cases-test**: 4 test cases
+  - Title 1/200/201 character boundaries, XSS string storage
+
+#### System Definition
+- **voro.asd**: Added test/util module for response-test.lisp
+
+### Fixed - Response Utility Bug
+
+- **src/util/response.lisp**: Fixed `response-success` nil handling
+  - Before: `(response-success nil)` → `{"success": true, "data": false}`
+  - After: `(response-success nil)` → `{"success": true, "data": {}}`
+  - Empty data now returns empty object instead of boolean false
+
+### Fixed - Username Validation
+
+- **src/util/validation.lisp**: Reject non-ASCII characters in username
+  - Added check to ensure all characters are ASCII alphanumeric or underscore
+  - Japanese characters and other non-ASCII now properly rejected
+
+### Commits
+
+- Branch: `test/expand-coverage-response-and-edge-cases`
+- `0912f10` test: Expand coverage for response utilities and edge cases
+
 ### Added - Middleware Session Unit Tests
 
 #### Test Infrastructure

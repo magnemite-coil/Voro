@@ -306,3 +306,173 @@
             (declare (ignore pagination))
             (ok (= (length posts) 1))
             (ok (string= (post-title (first posts)) "Filter Draft"))))))))
+
+;;;
+;;; create-new-post 境界値テスト
+;;;
+
+(deftest test-create-new-post-edge-cases
+  (with-test-environment
+    (testing "タイトル境界値 - 空文字はNG"
+      (multiple-value-bind (user session-id)
+          (register-user "titletest0" "password123" :email "t0@example.com")
+        (declare (ignore session-id))
+        (let ((user-id (voro.model.user:user-id user)))
+          (ok (signals (create-new-post user-id "" "Valid content")
+                       'validation-error)
+              "Empty title should fail"))))
+
+    (testing "タイトル境界値 - 1文字はOK"
+      (multiple-value-bind (user session-id)
+          (register-user "titletest1" "password123" :email "t1@example.com")
+        (declare (ignore session-id))
+        (let* ((user-id (voro.model.user:user-id user))
+               (post (create-new-post user-id "A" "Valid content here")))
+          (ok (not (null post))
+              "Post should be created")
+          (ok (string= (post-title post) "A")
+              "Title should be 'A'"))))
+
+    (testing "タイトル境界値 - 200文字はOK"
+      (multiple-value-bind (user session-id)
+          (register-user "titletest2" "password123" :email "t2@example.com")
+        (declare (ignore session-id))
+        (let* ((user-id (voro.model.user:user-id user))
+               (title-200 (make-string 200 :initial-element #\T))
+               (post (create-new-post user-id title-200 "Valid content")))
+          (ok (= (length (post-title post)) 200)
+              "Title should be 200 characters"))))
+
+    (testing "タイトル境界値 - 201文字はNG"
+      (multiple-value-bind (user session-id)
+          (register-user "titletest3" "password123" :email "t3@example.com")
+        (declare (ignore session-id))
+        (let* ((user-id (voro.model.user:user-id user))
+               (title-201 (make-string 201 :initial-element #\T)))
+          (ok (signals (create-new-post user-id title-201 "Valid content")
+                       'validation-error)
+              "201 characters should fail"))))
+
+    (testing "タイトル - 空白のみはNG"
+      (multiple-value-bind (user session-id)
+          (register-user "titletest4" "password123" :email "t4@example.com")
+        (declare (ignore session-id))
+        (let ((user-id (voro.model.user:user-id user)))
+          (ok (signals (create-new-post user-id "   " "Valid content")
+                       'validation-error)
+              "Whitespace-only title should fail"))))
+
+    (testing "コンテンツ境界値 - 空文字はNG"
+      (multiple-value-bind (user session-id)
+          (register-user "contenttest0" "password123" :email "c0@example.com")
+        (declare (ignore session-id))
+        (let ((user-id (voro.model.user:user-id user)))
+          (ok (signals (create-new-post user-id "Valid Title" "")
+                       'validation-error)
+              "Empty content should fail"))))
+
+    (testing "コンテンツ境界値 - 1文字はOK"
+      (multiple-value-bind (user session-id)
+          (register-user "contenttest1" "password123" :email "c1@example.com")
+        (declare (ignore session-id))
+        (let* ((user-id (voro.model.user:user-id user))
+               (post (create-new-post user-id "Valid Title" "C")))
+          (ok (string= (post-content post) "C")
+              "Content should be 'C'"))))
+
+    (testing "コンテンツ - 長いテキスト（10000文字）はOK"
+      (multiple-value-bind (user session-id)
+          (register-user "contenttest2" "password123" :email "c2@example.com")
+        (declare (ignore session-id))
+        (let* ((user-id (voro.model.user:user-id user))
+               (long-content (make-string 10000 :initial-element #\X))
+               (post (create-new-post user-id "Title" long-content)))
+          (ok (= (length (post-content post)) 10000)
+              "Content should be 10000 characters"))))
+
+    (testing "コンテンツ境界値 - 100000文字はOK"
+      (multiple-value-bind (user session-id)
+          (register-user "contenttest3" "password123" :email "c3@example.com")
+        (declare (ignore session-id))
+        (let* ((user-id (voro.model.user:user-id user))
+               (max-content (make-string 100000 :initial-element #\X))
+               (post (create-new-post user-id "Title" max-content)))
+          (ok (= (length (post-content post)) 100000)
+              "Content should be 100000 characters"))))
+
+    (testing "コンテンツ境界値 - 100001文字はNG"
+      (multiple-value-bind (user session-id)
+          (register-user "contenttest4" "password123" :email "c4@example.com")
+        (declare (ignore session-id))
+        (let* ((user-id (voro.model.user:user-id user))
+               (over-content (make-string 100001 :initial-element #\X)))
+          (ok (signals (create-new-post user-id "Title" over-content)
+                       'validation-error)
+              "100001 characters should fail"))))))
+
+;;;
+;;; セキュリティテスト
+;;;
+
+(deftest test-create-new-post-security
+  (with-test-environment
+    (testing "HTMLタグを含むタイトルはそのまま保存される"
+      (multiple-value-bind (user session-id)
+          (register-user "sectest1" "password123" :email "sec1@example.com")
+        (declare (ignore session-id))
+        (let* ((user-id (voro.model.user:user-id user))
+               (xss-title "<script>alert(1)</script>")
+               (post (create-new-post user-id xss-title "Content")))
+          (ok (string= (post-title post) xss-title)
+              "XSS string should be stored as-is"))))
+
+    (testing "SQLインジェクション風文字列は通常の文字列として保存される"
+      (multiple-value-bind (user session-id)
+          (register-user "sectest2" "password123" :email "sec2@example.com")
+        (declare (ignore session-id))
+        (let* ((user-id (voro.model.user:user-id user))
+               (sql-title "'; DROP TABLE post; --")
+               (post (create-new-post user-id sql-title "Content")))
+          (ok (string= (post-title post) sql-title)
+              "SQL injection string should be stored safely"))))))
+
+;;;
+;;; ページネーション正規化テスト
+;;;
+
+(deftest test-list-published-posts-pagination
+  (with-test-environment
+    (testing "ページネーション正規化 - page=0は1に正規化"
+      (multiple-value-bind (posts pagination)
+          (list-published-posts :page 0 :per-page 10)
+        (declare (ignore posts))
+        (ok (= (cdr (assoc :|page| pagination)) 1)
+            "page=0 should be normalized to 1")))
+
+    (testing "ページネーション正規化 - page=-1は1に正規化"
+      (multiple-value-bind (posts pagination)
+          (list-published-posts :page -1 :per-page 10)
+        (declare (ignore posts))
+        (ok (= (cdr (assoc :|page| pagination)) 1)
+            "page=-1 should be normalized to 1")))
+
+    (testing "ページネーション正規化 - per_page=0は1に正規化"
+      (multiple-value-bind (posts pagination)
+          (list-published-posts :page 1 :per-page 0)
+        (declare (ignore posts))
+        (ok (= (cdr (assoc :|per_page| pagination)) 1)
+            "per_page=0 should be normalized to 1")))
+
+    (testing "ページネーション正規化 - per_page=101は100に正規化"
+      (multiple-value-bind (posts pagination)
+          (list-published-posts :page 1 :per-page 101)
+        (declare (ignore posts))
+        (ok (= (cdr (assoc :|per_page| pagination)) 100)
+            "per_page=101 should be capped at 100")))
+
+    (testing "ページネーション正規化 - page=10001は10000に正規化"
+      (multiple-value-bind (posts pagination)
+          (list-published-posts :page 10001 :per-page 10)
+        (declare (ignore posts))
+        (ok (= (cdr (assoc :|page| pagination)) 10000)
+            "page=10001 should be capped at 10000")))))

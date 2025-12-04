@@ -92,15 +92,18 @@
      (error 'validation-error
             :message "Username must not exceed 50 characters"))
 
-    ;; 先頭文字チェック（英字で始まる）
-    ((not (alpha-char-p (char username 0)))
+    ;; 先頭文字チェック（ASCII英字で始まる）
+    ((not (and (alpha-char-p (char username 0))
+               (<= (char-code (char username 0)) 127)))
      (error 'validation-error
             :message "Username must start with a letter"))
 
-    ;; 使用可能文字チェック（英数字とアンダースコアのみ）
+    ;; 使用可能文字チェック（ASCII英数字とアンダースコアのみ）
     ((not (every (lambda (c)
-                   (or (alphanumericp c)
-                       (char= c #\_)))
+                   (or (digit-char-p c)                    ; 数字 0-9
+                       (and (alpha-char-p c)              ; 英字
+                            (<= (char-code c) 127))       ; ASCII範囲のみ
+                       (char= c #\_)))                    ; アンダースコア
                  username))
      (error 'validation-error
             :message "Username must contain only letters, numbers, and underscores"))
