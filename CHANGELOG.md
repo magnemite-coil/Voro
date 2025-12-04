@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Middleware Session Unit Tests
+
+#### Test Infrastructure
+- **test/middleware/session-test.lisp**: New unit test file for session management
+  - 6 functions tested, 14 test cases total
+  - Comprehensive coverage of session lifecycle
+
+#### Test Cases
+- **test-generate-session-id**: Session ID format and uniqueness validation
+  - Verifies 32-character hexadecimal format
+  - Confirms unique IDs on each generation
+- **test-create-session**: Session creation and Redis storage
+  - Validates session ID format
+  - Confirms user_id retrieval from Redis
+- **test-get-session-user-id**: Session to user_id retrieval
+  - Valid session ID returns correct user_id
+  - Invalid session ID returns NIL
+  - NIL input returns NIL
+- **test-get-current-user-id**: Request cookie to user_id extraction
+  - Valid session cookie returns user_id
+  - Invalid session cookie returns NIL
+  - No cookies returns NIL
+  - Other cookies only returns NIL
+- **test-delete-session**: Session deletion
+  - Successful deletion verified
+  - Non-existent session deletion doesn't error
+- **test-session-exists-p**: Session existence check
+  - Returns T for existing session
+  - Returns NIL for non-existent session
+
+#### Technical Implementation
+- **make-mock-request helper**: Dynamic symbol resolution for `lack.request:%make-request`
+  - Avoids compile-time package dependency issues
+  - Uses `find-symbol` + `funcall` for runtime resolution
+- **cl-ppcre:scan**: Full package qualification instead of import-from
+  - `scan` symbol not exported from cl-ppcre package
+
+#### System Definition
+- **voro.asd**: Added middleware test module
+  - New `(:module "middleware" ...)` in voro/test system
+  - Depends on setup and fixtures
+
+#### Commits
+- Branch: `test/middleware-session-unit-tests`
+- `595b546` test: Add unit tests for middleware/session.lisp
+
 ### Changed - Remove Duplicate Code in Handler Layer
 
 #### Middleware Enhancement
