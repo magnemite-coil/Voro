@@ -28,10 +28,11 @@ quicklisp/
 .DS_Store
 Thumbs.db
 
-# Development - Claude Code documentation
+# Development - Claude Code and Codex documentation
 .claude/
 CLAUDE.md
 PROGRESS.md
+CODEX.md
 
 # Development - Design documents (may contain security details)
 docs/design/
