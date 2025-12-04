@@ -103,6 +103,10 @@
        (:file "model-test" :depends-on ("setup" "fixtures"))
        (:file "service-test" :depends-on ("setup" "fixtures"))
        (:file "handler-test" :depends-on ("setup" "fixtures"))
+       (:module "middleware"
+        :depends-on ("setup" "fixtures")
+        :components (
+          (:file "session-test")))
        (:module "handler"
         :depends-on ("setup" "fixtures" "http-helper")
         :components (
