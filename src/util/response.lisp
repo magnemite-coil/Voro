@@ -20,10 +20,11 @@
 (defun response-success (data &key (status 200) headers)
   "成功レスポンスを生成
    data: alist形式のデータ (例: (list :|user| user-data))
+         nilの場合は空オブジェクト {} として出力
    headers: 追加ヘッダー (plist形式)"
   (json-response status
                  (list (cons :|success| t)
-                       (cons :|data| data))
+                       (cons :|data| (or data (make-hash-table :test 'equal))))
                  :additional-headers headers))
 
 (defun response-error (status message &key error-id headers)

@@ -539,3 +539,172 @@
               (http-get "/api/me/posts")
             (declare (ignore body headers))
             (assert-status 401 status)))))))
+
+;;;
+;;; ページネーション境界値テスト（HTTP統合）
+;;;
+
+(deftest post-list-pagination-edge-cases-test
+  (testing "GET /api/posts - page=0は1に正規化される"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (body status headers)
+              (http-get "/api/posts?page=0")
+            (declare (ignore headers))
+            (assert-status 200 status)
+            (let* ((parsed (com.inuoe.jzon:parse body))
+                   (pagination (gethash "pagination" (gethash "data" parsed))))
+              (ok (= (gethash "page" pagination) 1)
+                  "page should be normalized to 1")))))))
+
+  (testing "GET /api/posts - per_page=200は100に正規化される"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (body status headers)
+              (http-get "/api/posts?per_page=200")
+            (declare (ignore headers))
+            (assert-status 200 status)
+            (let* ((parsed (com.inuoe.jzon:parse body))
+                   (pagination (gethash "pagination" (gethash "data" parsed))))
+              (ok (= (gethash "per_page" pagination) 100)
+                  "per_page should be capped at 100")))))))
+
+  (testing "GET /api/posts - 投稿0件の場合は空配列"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (body status headers)
+              (http-get "/api/posts")
+            (declare (ignore headers))
+            (assert-status 200 status)
+            (let* ((parsed (com.inuoe.jzon:parse body))
+                   (posts (gethash "posts" (gethash "data" parsed))))
+              (ok (zerop (length posts))
+                  "posts should be empty array")))))))
+
+  (testing "GET /api/posts - page=10001は10000に正規化される"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (body status headers)
+              (http-get "/api/posts?page=10001")
+            (declare (ignore headers))
+            (assert-status 200 status)
+            (let* ((parsed (com.inuoe.jzon:parse body))
+                   (pagination (gethash "pagination" (gethash "data" parsed))))
+              (ok (= (gethash "page" pagination) 10000)
+                  "page should be capped at 10000"))))))))
+
+;;;
+;;; 不正なID入力テスト
+;;;
+
+(deftest post-get-invalid-id-test
+  (testing "GET /api/posts/:id - 不正なID（文字列）は400"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (body status headers)
+              (http-get "/api/posts/abc")
+            (declare (ignore body headers))
+            (assert-status 400 status))))))
+
+  (testing "GET /api/posts/:id - 不正なID（小数）は400"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (body status headers)
+              (http-get "/api/posts/1.5")
+            (declare (ignore body headers))
+            (assert-status 400 status))))))
+
+  (testing "GET /api/posts/:id - 存在しない大きなIDは404"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (body status headers)
+              (http-get "/api/posts/9999999999")
+            (declare (ignore body headers))
+            (assert-status 404 status)))))))
+
+;;;
+;;; 投稿作成境界値テスト（HTTP統合）
+;;;
+
+(deftest post-create-edge-cases-test
+  (testing "POST /api/posts - 境界値タイトル（1文字）"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            (multiple-value-bind (body status headers)
+                (http-post "/api/posts"
+                          :json (list (cons :|title| "A")
+                                     (cons :|content| "Valid content"))
+                          :cookies (list (cons "session_id" session-id)))
+              (declare (ignore headers))
+              (assert-status 201 status)
+              (let* ((parsed (com.inuoe.jzon:parse body))
+                     (post (gethash "post" (gethash "data" parsed))))
+                (ok (string= (gethash "title" post) "A")
+                    "Title should be 'A'"))))))))
+
+  (testing "POST /api/posts - 境界値タイトル（200文字）"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            (let ((title-200 (make-string 200 :initial-element #\T)))
+              (multiple-value-bind (body status headers)
+                  (http-post "/api/posts"
+                            :json (list (cons :|title| title-200)
+                                       (cons :|content| "Valid content"))
+                            :cookies (list (cons "session_id" session-id)))
+                (declare (ignore headers))
+                (assert-status 201 status)
+                (let* ((parsed (com.inuoe.jzon:parse body))
+                       (post (gethash "post" (gethash "data" parsed))))
+                  (ok (= (length (gethash "title" post)) 200)
+                      "Title should be 200 characters")))))))))
+
+  (testing "POST /api/posts - タイトル超過（201文字）は400"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            (let ((title-201 (make-string 201 :initial-element #\T)))
+              (multiple-value-bind (body status headers)
+                  (http-post "/api/posts"
+                            :json (list (cons :|title| title-201)
+                                       (cons :|content| "Valid content"))
+                            :cookies (list (cons "session_id" session-id)))
+                (declare (ignore body headers))
+                (assert-status 400 status))))))))
+
+  (testing "POST /api/posts - XSS文字列はそのまま保存される"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            (let ((xss-title "<script>alert('xss')</script>"))
+              (multiple-value-bind (body status headers)
+                  (http-post "/api/posts"
+                            :json (list (cons :|title| xss-title)
+                                       (cons :|content| "Content"))
+                            :cookies (list (cons "session_id" session-id)))
+                (declare (ignore headers))
+                (assert-status 201 status)
+                (let* ((parsed (com.inuoe.jzon:parse body))
+                       (post (gethash "post" (gethash "data" parsed))))
+                  (ok (string= (gethash "title" post) xss-title)
+                      "XSS string should be stored as-is"))))))))))

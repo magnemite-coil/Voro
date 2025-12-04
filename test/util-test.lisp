@@ -224,3 +224,125 @@
       ;; 大文字小文字を区別する
       (ok (null (get-body-param params "username")))
       (ok (equal "test" (get-body-param params "Username"))))))
+
+;;;
+;;; validate-password 追加テスト（境界値・特殊ケース）
+;;;
+
+(deftest test-validate-password-edge-cases
+  (testing "境界値テスト - 7文字はNG"
+    (ok (signals (validate-password "pass12a") 'validation-error)
+        "7 characters should fail"))
+
+  (testing "境界値テスト - 8文字はOK"
+    (ok (validate-password "pass123a")
+        "8 characters should pass"))
+
+  (testing "長いパスワード（100文字）はOK"
+    (let ((long-password (concatenate 'string
+                                       (make-string 92 :initial-element #\a)
+                                       "12345678")))
+      (ok (validate-password long-password)
+          "100 characters should pass")))
+
+  (testing "特殊記号を含むパスワードはOK"
+    (ok (validate-password "p@ssw0rd!")
+        "Special characters should pass")
+    (ok (validate-password "Test#123$")
+        "Multiple special characters should pass"))
+
+  (testing "空白を含むパスワードはOK"
+    (ok (validate-password "pass 123a")
+        "Spaces should be allowed"))
+
+  (testing "日本語+英字+数字はOK"
+    (ok (validate-password "パスワード123a")
+        "Japanese with letters and numbers should pass"))
+
+  (testing "数字のみ（英字なし）はNG"
+    (ok (signals (validate-password "12345678") 'validation-error)
+        "Numbers only should fail"))
+
+  (testing "英字のみ（数字なし）はNG"
+    (ok (signals (validate-password "abcdefgh") 'validation-error)
+        "Letters only should fail")))
+
+;;;
+;;; validate-username 追加テスト（境界値・特殊ケース）
+;;;
+
+(deftest test-validate-username-edge-cases
+  (testing "境界値テスト - 2文字はNG"
+    (ok (signals (validate-username "ab") 'validation-error)
+        "2 characters should fail"))
+
+  (testing "境界値テスト - 3文字はOK"
+    (ok (validate-username "abc")
+        "3 characters should pass"))
+
+  (testing "境界値テスト - 50文字はOK"
+    ;; 先頭は英字必須のため "a" + 49文字 = 50文字
+    (let ((username-50 (concatenate 'string "a" (make-string 49 :initial-element #\b))))
+      (ok (validate-username username-50)
+          "50 characters should pass")))
+
+  (testing "境界値テスト - 51文字はNG"
+    ;; 先頭は英字必須のため "a" + 50文字 = 51文字
+    (let ((username-51 (concatenate 'string "a" (make-string 50 :initial-element #\b))))
+      (ok (signals (validate-username username-51) 'validation-error)
+          "51 characters should fail")))
+
+  (testing "アンダースコアを含むユーザー名はOK"
+    (ok (validate-username "user_name_123")
+        "Underscores should be allowed"))
+
+  (testing "ハイフンを含むユーザー名はNG"
+    (ok (signals (validate-username "user-name") 'validation-error)
+        "Hyphens should not be allowed"))
+
+  (testing "日本語ユーザー名はNG"
+    (ok (signals (validate-username "ユーザー") 'validation-error)
+        "Japanese characters should not be allowed"))
+
+  (testing "数字で始まるユーザー名はNG"
+    (ok (signals (validate-username "123user") 'validation-error)
+        "Starting with number should not be allowed")))
+
+;;;
+;;; validate-email 追加テスト（境界値）
+;;;
+;;; 注: RFC 5321ではローカル部は64文字まで。この値を超えると長さ超過ではなく
+;;;     ローカル部フォーマットエラーになる可能性があるため、ローカル部は64文字に固定し
+;;;     ドメイン部の長さを調整して総文字数の境界値をテストする。
+;;;
+
+(deftest test-validate-email-edge-cases
+  (testing "境界値テスト - 254文字はOK"
+    ;; ローカル部64文字 + @ + ドメイン部185文字 + .com(4文字) = 254文字
+    (let ((email (format nil "~A@~A.com"
+                         (make-string 64 :initial-element #\a)
+                         (make-string 185 :initial-element #\b))))
+      (ok (validate-email email)
+          "254 characters should pass")))
+
+  (testing "境界値テスト - 255文字はNG"
+    ;; ローカル部64文字 + @ + ドメイン部186文字 + .com(4文字) = 255文字
+    (let ((email (format nil "~A@~A.com"
+                         (make-string 64 :initial-element #\a)
+                         (make-string 186 :initial-element #\b))))
+      (ok (signals (validate-email email) 'validation-error)
+          "255 characters should fail")))
+
+  (testing "サブドメインを含むメールアドレスはOK"
+    (ok (validate-email "user@mail.example.com")
+        "Subdomain should pass")
+    (ok (validate-email "user@sub.domain.example.co.jp")
+        "Multiple subdomains should pass"))
+
+  (testing "@で始まるメールアドレスはNG"
+    (ok (signals (validate-email "@example.com") 'validation-error)
+        "Email starting with @ should fail"))
+
+  (testing "@で終わるメールアドレスはNG"
+    (ok (signals (validate-email "user@") 'validation-error)
+        "Email ending with @ should fail")))
