@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Test Coverage Expansion (db)
+
+#### New Test File
+- **test/db-test.lisp**: Comprehensive unit tests for database module
+  - `test-calculate-retry-delay`: Exponential backoff calculation (7 assertions)
+  - `test-build-connection-string`: Connection string format, URI reserved chars
+  - `test-connect-db`: Normal connection, mito integration
+  - `test-connect-db-retry-failure`: Retry failure error, retry count verification
+  - `test-disconnect-db`: Normal disconnect, idempotency, error state cleanup
+  - `test-db-health-check-disabled`: Behavior when disabled
+  - `test-db-health-check-enabled`: Behavior when enabled
+  - `test-db-health-check-cache`: Cache behavior verification
+  - `test-db-health-check-failure`: Connection cleanup on failure
+  - `test-db-health-check-failure-mito-state`: Mito connection cleared (post-fix behavior)
+  - `test-ensure-db-connected`: Reconnection behavior
+  - `test-ensure-db-connected-recovery`: Recovery after health check failure
+  - 12 test cases total
+
+#### Helper Macros
+- **with-config-override**: Temporarily override config values for testing
+- **with-disconnected-db**: Temporarily disconnect DB for testing, with proper restoration
+
+#### System Definition
+- **voro.asd**: Added `db-test` (depends on setup)
+
+### Fixed - DB Health Check Mito Connection Cleanup
+
+- **src/db.lisp**: Fixed `db-health-check` to also call `mito:disconnect-toplevel` on failure
+  - Before: Only `*db-connection*` set to NIL, `mito.connection:*connection*` left dangling
+  - After: Both connections properly cleaned up
+  - Prevents exceptions when mito API called between failure and retry
+  - Ensures consistency with `disconnect-db` behavior
+
+### Commits
+
+- Branch: `test/expand-coverage-db`
+- `69cd976` test: Add comprehensive test coverage for db.lisp
+
+---
+
 ### Added - Test Coverage Expansion (util/log, config, model/user)
 
 #### New Test Files
