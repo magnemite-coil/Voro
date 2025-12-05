@@ -200,8 +200,13 @@
     (error (e)
       (log-warn "Database health check failed"
                 :context (list :|error| (princ-to-string e)))
-      ;; 接続が切れているのでクリア
+      ;; 接続が切れているのでクリア（mito接続も含めて）
       (setf *db-connection* nil)
+      (handler-case
+          (mito:disconnect-toplevel)
+        (error (disconnect-error)
+          (log-debug "Failed to disconnect mito toplevel during health check cleanup"
+                     :context (list :|error| (princ-to-string disconnect-error)))))
       nil)))
 
 (defun ensure-db-connected ()
