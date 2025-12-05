@@ -100,11 +100,17 @@
        (:file "fixtures" :depends-on ("setup"))
        (:file "http-helper" :depends-on ("setup"))
        (:file "util-test" :depends-on ("setup"))
+       (:file "config-test" :depends-on ("setup"))
        (:module "util"
         :depends-on ("setup")
         :components (
-          (:file "response-test")))
+          (:file "response-test")
+          (:file "log-test")))
        (:file "model-test" :depends-on ("setup" "fixtures"))
+       (:module "model"
+        :depends-on ("setup" "fixtures")
+        :components (
+          (:file "user-test")))
        (:file "service-test" :depends-on ("setup" "fixtures"))
        (:file "handler-test" :depends-on ("setup" "fixtures"))
        (:module "middleware"

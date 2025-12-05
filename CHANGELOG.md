@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Test Coverage Expansion (util/log, config, model/user)
+
+#### New Test Files
+- **test/util/log-test.lisp**: Unit tests for logging utilities
+  - `generate-error-id`: Format validation (16-char alphanumeric), uniqueness
+  - `log-level-priority`: Priority ordering (:debug < :info < :warn < :error)
+  - `should-log-p`: Log level filtering tests
+  - `format-log-message`: Basic format, with context, with error
+  - `log-error`/`log-info`/`log-warn`/`log-debug`: File output verification
+  - `log-level-filtering-integration`: End-to-end filter behavior tests
+- **test/config-test.lisp**: Unit tests for configuration management
+  - `valid-port-p`: Valid/invalid port numbers (1-65535 boundary)
+  - `valid-env-p`: Valid/invalid environment names (development/test/production)
+  - `valid-log-level-p`: Valid/invalid log levels
+  - `valid-redis-db-p`: Valid/invalid Redis DB numbers (0-15)
+  - `get-env`/`get-env-or-default`: Environment variable retrieval
+  - `get-config`: Type conversion (:string/:integer/:keyword/:boolean), defaults, validators
+  - Validator integration tests for APP_ENV, LOG_LEVEL, REDIS_DB
+- **test/model/user-test.lisp**: Comprehensive user model tests (separated from model-test.lisp)
+  - `create-user`: Basic creation, creation without email
+  - `create-user-duplicate`: Duplicate username error handling
+  - `find-user-by-id`: Existing/non-existing/invalid ID
+  - `find-user-by-username`: Existing/non-existing/case-sensitivity
+  - `user-email`: With/without email
+  - `verify-user-password`: Correct/incorrect/empty password
+  - `user-timestamps`: created_at/updated_at auto-generation
+  - `user-id`: Positive integer, uniqueness
+
+#### File Reorganization
+- **test/model-test.lisp**: Removed `test-user-model` (migrated to model/user-test.lisp)
+  - Only `test-post-model` remains
+  - Added comment noting User tests migration
+
+#### System Definition
+- **voro.asd**: Updated voro/test system
+  - Added `config-test` (depends on setup)
+  - Added `util/log-test` in util module
+  - Added new `model` module with `user-test`
+
+#### Helper Macros
+- **with-temp-log-file**: Temporary log file for testing file output
+  - Suppresses stdout to prevent test noise
+  - Auto-cleanup with unwind-protect
+- **with-env-var**: Temporary environment variable setting (SBCL-only)
+  - Proper restoration using sb-posix:unsetenv
+  - Handles previously unset variables correctly
+
+### Commits
+
+- Branch: `test/expand-coverage-util-config-model`
+- `ae9166c` test: Expand coverage for util/log, config, and model/user
+
+---
+
 ### Added - Test Coverage Expansion
 
 #### New Test File
