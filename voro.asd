@@ -102,6 +102,7 @@
        (:file "util-test" :depends-on ("setup"))
        (:file "config-test" :depends-on ("setup"))
        (:file "db-test" :depends-on ("setup"))
+       (:file "redis-test" :depends-on ("setup"))
        (:module "util"
         :depends-on ("setup")
         :components (
