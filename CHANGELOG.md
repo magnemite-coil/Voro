@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Test Coverage Expansion (redis)
+
+#### New Test File
+- **test/redis-test.lisp**: Comprehensive unit tests for Redis module
+  - `test-calculate-retry-delay`: Exponential backoff calculation (7 assertions)
+  - `test-connect-redis`: Normal connection with ping verification
+  - `test-connect-redis-retry-failure`: Retry failure error, retry count verification
+  - `test-disconnect-redis`: Normal disconnect, idempotency, error state cleanup
+  - `test-redis-health-check-disabled`: Behavior when disabled
+  - `test-redis-health-check-enabled`: Behavior when enabled
+  - `test-redis-health-check-cache`: Cache behavior verification
+  - `test-redis-health-check-failure`: Connection cleanup on ping failure
+  - `test-ensure-redis-connected`: Reconnection behavior
+  - `test-ensure-redis-connected-recovery`: Recovery after health check failure
+  - `test-red-set-get`: SET/GET commands, overwrite, nonexistent key
+  - `test-red-del`: DEL command, idempotency
+  - `test-red-expire`: EXPIRE command, TTL decay, key expiration
+  - `test-red-hash-commands`: HSET/HGET/HGETALL commands
+  - `test-red-commands-auto-reconnect`: Auto-reconnect via command wrappers
+  - 17 test cases total
+
+#### Helper Macros
+- **with-config-override**: Temporarily override config values for testing (same as db-test.lisp)
+- **with-disconnected-redis**: Temporarily disconnect Redis for testing, with proper restoration
+
+#### System Definition
+- **voro.asd**: Added `redis-test` (depends on setup)
+
+### Commits
+
+- Branch: `test/expand-coverage-redis`
+
+---
+
 ### Added - Test Coverage Expansion (db)
 
 #### New Test File
