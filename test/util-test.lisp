@@ -15,7 +15,9 @@
                 :to-json-plist
                 :parse-json)
   (:import-from :voro.util.request
-                :get-body-param))
+                :get-body-param)
+  (:import-from :cl-ppcre
+                :scan))
 
 (in-package :voro.test.util)
 
@@ -103,6 +105,86 @@
     (let ((hash1 (hash-password "password123"))
           (hash2 (hash-password "password123")))
       (ok (not (string= hash1 hash2))))))
+
+;;;
+;;; hash-password / verify-password 追加テスト（test/util-test.lisp に追加）
+;;;
+;;; 注意:
+;;;   - ハッシュ形式検証で使用する 100000 は src/util/crypto.lisp の
+;;;     *pbkdf2-iterations* 定数と同じ値。イテレーション回数を変更した場合は
+;;;     このテストも更新が必要
+;;;
+
+(deftest test-hash-password-edge-cases
+  (testing "空文字パスワードのハッシュ化"
+    (let ((hashed (hash-password "")))
+      (ok (stringp hashed)
+          "Empty password can be hashed")
+      (ok (> (length hashed) 0)
+          "Hash is not empty")))
+
+  (testing "日本語パスワードのハッシュ化"
+    (let ((hashed (hash-password "パスワード123abc")))
+      (ok (stringp hashed)
+          "Japanese password can be hashed")
+      (ok (verify-password "パスワード123abc" hashed)
+          "Japanese password can be verified")))
+
+  (testing "特殊記号を含むパスワードのハッシュ化"
+    (let* ((special-password "P@ss!#$%^&*()_+-=[]{}|;':\",./<>?")
+           (hashed (hash-password special-password)))
+      (ok (stringp hashed)
+          "Password with special characters can be hashed")
+      (ok (verify-password special-password hashed)
+          "Password with special characters can be verified")))
+
+  (testing "非常に長いパスワードのハッシュ化"
+    (let* ((long-password (make-string 1000 :initial-element #\a))
+           (hashed (hash-password long-password)))
+      (ok (stringp hashed)
+          "Long password can be hashed")
+      (ok (verify-password long-password hashed)
+          "Long password can be verified")))
+
+  (testing "ハッシュ形式の検証（PBKDF2形式）"
+    ;; フォーマット: PBKDF2$SHA256:100000$<salt>$<hash>
+    ;; イテレーション数を固定値で検証し、意図しない変更を検出
+    ;; 注: 100000 は src/util/crypto.lisp の *pbkdf2-iterations* と同じ値
+    ;; 注: SHA256 は ironclad が大文字で出力する
+    (let ((hashed (hash-password "testpassword")))
+      (ok (scan "^PBKDF2\\$SHA256:100000\\$" hashed)
+          "Hash should be in PBKDF2$SHA256:100000$ format with correct iteration count"))))
+
+(deftest test-verify-password-edge-cases
+  (testing "空文字パスワードの検証"
+    (let ((hashed (hash-password "")))
+      (ok (verify-password "" hashed)
+          "Empty password verification succeeds")
+      (ok (not (verify-password "notempty" hashed))
+          "Non-empty password against empty hash fails")))
+
+  (testing "不正なハッシュ形式での検証"
+    (ok (null (verify-password "password" "invalid-hash-format"))
+        "Invalid hash format returns NIL")
+    (ok (null (verify-password "password" "notpbkdf2format"))
+        "Non-PBKDF2 format returns NIL"))
+
+  (testing "空文字ハッシュでの検証"
+    (ok (null (verify-password "password" ""))
+        "Empty hash returns NIL"))
+
+  (testing "NILハッシュでの検証"
+    ;; verify-passwordがNILを受け取った場合の挙動を検証
+    ;; ironclad:pbkdf2-check-password が NIL を受け取るとエラーになるが、
+    ;; handler-case で捕捉されて NIL が返る設計（src/util/crypto.lisp:34-41）
+    (ok (null (verify-password "password" nil))
+        "NIL hash returns NIL"))
+
+  (testing "ハッシュにゴミデータが混入した場合"
+    (let* ((valid-hash (hash-password "password"))
+           (corrupted-hash (concatenate 'string valid-hash "garbage")))
+      (ok (null (verify-password "password" corrupted-hash))
+          "Corrupted hash returns NIL"))))
 
 ;;; JSON変換テスト
 
@@ -224,6 +306,52 @@
       ;; 大文字小文字を区別する
       (ok (null (get-body-param params "username")))
       (ok (equal "test" (get-body-param params "Username"))))))
+
+;;;
+;;; get-body-param 追加テスト（test/util-test.lisp に追加）
+;;;
+
+(deftest test-get-body-param-edge-cases
+  (testing "マルチバイト文字のキー"
+    (let ((params '(("ユーザー名" . "テスト"))))
+      (ok (equal "テスト" (get-body-param params "ユーザー名"))
+          "Japanese key is found")))
+
+  (testing "マルチバイト文字の値"
+    (let ((params '(("name" . "田中太郎"))))
+      (ok (equal "田中太郎" (get-body-param params "name"))
+          "Japanese value is returned correctly")))
+
+  (testing "特殊文字を含むキー"
+    (let ((params '(("user-name" . "test")
+                    ("email@key" . "value")
+                    ("key with space" . "spaced"))))
+      (ok (equal "test" (get-body-param params "user-name"))
+          "Key with hyphen is found")
+      (ok (equal "value" (get-body-param params "email@key"))
+          "Key with @ is found")
+      (ok (equal "spaced" (get-body-param params "key with space"))
+          "Key with space is found")))
+
+  (testing "空文字キーでの検索"
+    (let ((params '(("" . "empty-key-value") ("normal" . "value"))))
+      (ok (equal "empty-key-value" (get-body-param params ""))
+          "Empty string key is found")))
+
+  (testing "値がNILのエントリ"
+    (let ((params '(("nullvalue" . nil))))
+      (ok (null (get-body-param params "nullvalue"))
+          "NIL value is returned as NIL")))
+
+  (testing "値が空文字のエントリ"
+    (let ((params '(("emptyvalue" . ""))))
+      (ok (equal "" (get-body-param params "emptyvalue"))
+          "Empty string value is returned")))
+
+  (testing "重複キーがある場合（最初のものが返る）"
+    (let ((params '(("dup" . "first") ("other" . "value") ("dup" . "second"))))
+      (ok (equal "first" (get-body-param params "dup"))
+          "First occurrence is returned for duplicate keys"))))
 
 ;;;
 ;;; validate-password 追加テスト（境界値・特殊ケース）

@@ -4,7 +4,10 @@
                 :with-test-environment)
   (:import-from :voro.service.auth
                 :register-user
-                :authenticate-user)
+                :authenticate-user
+                :logout-user)
+  (:import-from :voro.middleware.session
+                :session-exists-p)
   (:import-from :voro.service.post
                 :create-new-post
                 :get-post
@@ -77,6 +80,52 @@
     (testing "間違ったパスワードで失敗"
       (let ((result (authenticate-user "logintest" "wrongpassword")))
         (ok (null result))))))
+
+;;;
+;;; logout-user テスト（test/service-test.lisp に追加）
+;;;
+
+(deftest test-logout-user
+  (with-test-environment
+    (testing "正常なログアウト"
+      (multiple-value-bind (user session-id)
+          (register-user "logouttest" "password123" :email "logout@example.com")
+        (declare (ignore user))
+        ;; セッションが存在することを確認
+        (ok (session-exists-p session-id)
+            "Session should exist before logout")
+        ;; ログアウト
+        (logout-user session-id)
+        ;; セッションが削除されたことを確認
+        (ok (not (session-exists-p session-id))
+            "Session should not exist after logout")))
+
+    (testing "存在しないセッションIDでのログアウト（冪等性）"
+      ;; 存在しないセッションIDでもエラーが発生しないことを確認
+      ;; 事前にセッションが存在しないことを確認し、冪等性を強化
+      ;; 注: セッションIDは32文字の16進数形式（src/middleware/session.lisp:23-26）
+      (let ((fake-session-id "00000000000000000000000000000000"))
+        ;; 事前確認: セッションが存在しないこと
+        (ok (not (session-exists-p fake-session-id))
+            "Session should not exist before logout attempt")
+        ;; ログアウト実行（エラーが発生しないこと）
+        (handler-case
+            (progn
+              (logout-user fake-session-id)
+              (ok t "Logout with nonexistent session should not raise error"))
+          (error (e)
+            (declare (ignore e))
+            (ok nil "Logout raised an unexpected error")))
+        ;; 事後確認: セッションが依然として存在しないこと
+        (ok (not (session-exists-p fake-session-id))
+            "Session should still not exist after logout attempt")))))
+
+(deftest test-authenticate-user-edge-cases
+  (with-test-environment
+    (testing "存在しないユーザーでログイン失敗"
+      (let ((result (authenticate-user "nonexistentuser" "password123")))
+        (ok (null result)
+            "Authentication with nonexistent user returns NIL")))))
 
 ;;; Post Service テスト
 
