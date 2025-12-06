@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Test Coverage Expansion (service/auth, util/crypto, util/request)
+
+#### Updated Test Files
+- **test/service-test.lisp**: Added auth service edge case tests (+51 lines)
+  - `test-logout-user`: Normal logout, idempotency with nonexistent session ID
+  - `test-authenticate-user-edge-cases`: Login failure with nonexistent user
+- **test/util-test.lisp**: Added crypto and request edge case tests (+130 lines)
+  - `test-hash-password-edge-cases`: Empty, Japanese, special chars, long password, PBKDF2 format
+  - `test-verify-password-edge-cases`: Empty, invalid format, empty hash, NIL hash, corrupted hash
+  - `test-get-body-param-edge-cases`: Multibyte chars, special chars, empty key, NIL/empty values, duplicate keys
+  - `test-validate-password-edge-cases`: 7/8 char boundary, 100 chars, special chars, spaces, Japanese
+  - `test-validate-username-edge-cases`: 2/3/50/51 char boundary, underscore, hyphen, Japanese
+  - `test-validate-email-edge-cases`: 254/255 char boundary, subdomains, @ position
+
+#### Package Definition Updates
+- **voro.test.service**: Added imports for `:logout-user`, `:session-exists-p`
+- **voro.test.util**: Added import for `(:import-from :cl-ppcre :scan)`
+
+#### Design Document Update
+- **docs/design/test-expansion-auth-crypto-request.md**: Updated to v1.9
+  - Status: "実装完了" (Implementation Complete)
+  - Fixed SHA256 casing (ironclad outputs uppercase)
+  - All approval items marked as completed
+
+### Commits
+
+- Branch: `test/expand-coverage-auth-crypto-request`
+- `7afdb07` test: Add comprehensive test coverage for auth, crypto, and request modules
+
+---
+
 ### Added - Test Coverage Expansion (redis)
 
 #### New Test File
