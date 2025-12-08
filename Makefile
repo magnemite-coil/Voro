@@ -1,4 +1,4 @@
-.PHONY: test test-backend test-watch test-coverage clean logs shell-test help
+.PHONY: test test-backend test-watch test-coverage test-coverage-local clean logs shell-test help
 
 # デフォルトターゲット
 .DEFAULT_GOAL := help
@@ -11,7 +11,8 @@ help:
 	@echo "  make test            - Run all tests (backend)"
 	@echo "  make test-backend    - Run backend tests in Docker"
 	@echo "  make test-watch      - Run tests in watch mode (auto-rerun)"
-	@echo "  make test-coverage   - Run tests with coverage report"
+	@echo "  make test-coverage   - Run tests with coverage report (Docker)"
+	@echo "  make test-coverage-local - Run tests with coverage report (local)"
 	@echo "  make clean           - Clean up Docker containers and volumes"
 	@echo "  make logs            - Show test runner logs"
 	@echo "  make shell-test      - Open shell in test runner container"
@@ -34,10 +35,25 @@ test-watch:
 	@echo "========== Starting test watcher (press Ctrl+C to stop) =========="
 	docker compose -f docker-compose.test.yml up --build test-watcher
 
-# カバレッジ測定（CI用）
+# カバレッジ測定（Docker環境）
+# 注意: docker compose up を使用して depends_on の service_healthy を待機する
 test-coverage:
 	@echo "========== Running tests with coverage =========="
-	./scripts/run-coverage.sh
+	@mkdir -p coverage-report
+	@export HOST_UID=$$(id -u) HOST_GID=$$(id -g); \
+	docker compose -f docker-compose.test.yml up --build --abort-on-container-exit test-coverage-runner; \
+	EXIT_CODE=$$?; \
+	docker compose -f docker-compose.test.yml down -v; \
+	echo "Coverage report: coverage-report/cover-index.html"; \
+	exit $$EXIT_CODE
+
+# ローカル環境でのカバレッジ測定（Docker不要）
+test-coverage-local:
+	@echo "========== Running tests with coverage (local) =========="
+	@mkdir -p coverage-report
+	sbcl --non-interactive \
+	     --load scripts/run-coverage.lisp
+	@echo "Coverage report: coverage-report/cover-index.html"
 
 # クリーンアップ
 clean:

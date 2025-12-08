@@ -123,6 +123,44 @@ services:
           sleep 5
         done
 
+  # カバレッジ測定用コンテナ
+  test-coverage-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        HOST_UID: ${HOST_UID:-1000}
+        HOST_GID: ${HOST_GID:-1000}
+    container_name: voro-test-coverage-runner
+    depends_on:
+      test-db:
+        condition: service_healthy
+      test-redis:
+        condition: service_healthy
+    environment:
+      APP_ENV: test
+      TEST_MODE: "true"
+      DB_HOST: test-db
+      DB_PORT: 5432
+      TEST_DB_NAME: voro_test
+      TEST_DB_USER: voro_test_user
+      TEST_DB_PASSWORD: voro_test_password
+      REDIS_HOST: test-redis
+      REDIS_PORT: 6379
+      TEST_REDIS_DB: 1
+      LOG_LEVEL: debug
+    volumes:
+      - ./src:/app/src:ro
+      - ./test:/app/test:ro
+      - ./scripts:/app/scripts:ro
+      - ./voro.asd:/app/voro.asd:ro
+      - ./coverage-report:/app/coverage-report
+    networks:
+      - voro-test-network
+    command: >
+      sbcl --non-interactive
+           --load /app/scripts/run-coverage.lisp
+
 networks:
   voro-test-network:
     name: voro-test-network
