@@ -4,12 +4,20 @@
                 :create-user
                 :user-id
                 :user-username)
+  (:import-from :voro.model.post
+                :create-post)
   (:import-from :voro.middleware.session
                 :create-session)
   (:export
    ;; ユーザーフィクスチャ
    :create-test-user
    :create-test-users
+
+   ;; 投稿フィクスチャ
+   :create-test-post
+   :create-test-posts
+   :*default-test-post-title*
+   :*default-test-post-content*
 
    ;; セッションフィクスチャ
    :create-test-session
@@ -120,3 +128,71 @@
 
   (let ((user (or user (create-test-user))))
     (values (create-session (user-id user)) user)))
+
+;;;
+;;; 投稿フィクスチャ
+;;;
+
+(defparameter *default-test-post-title* "Test Post Title"
+  "テスト投稿のデフォルトタイトル")
+
+(defparameter *default-test-post-content* "Test post content for testing purposes."
+  "テスト投稿のデフォルト本文")
+
+(defun create-test-post (&key
+                           user
+                           (title *default-test-post-title*)
+                           (content *default-test-post-content*)
+                           (published nil))
+  "テスト用投稿を作成
+
+  引数:
+    user: userオブジェクト（省略時は新規ユーザーを作成）
+    title: タイトル（デフォルト: Test Post Title）
+    content: 本文（デフォルト: Test post content...）
+    published: 公開フラグ（デフォルト: nil）
+
+  戻り値: (values post user)
+    - 第一戻り値: postオブジェクト
+    - 第二戻り値: userオブジェクト（:userを省略した場合に有用）
+
+  使用例:
+    ;; 新規ユーザー + 投稿（両方の戻り値を使用）
+    (multiple-value-bind (post user)
+        (create-test-post)
+      (ok (not (null post))))
+
+    ;; 既存ユーザーで投稿作成（postのみ使用、第二戻り値は無視）
+    (let* ((user (create-test-user))
+           (post (create-test-post :user user :published t)))
+      (ok (post-published post)))"
+
+  (let ((user (or user (create-test-user))))
+    (values (create-post
+             (user-id user)
+             title
+             content
+             :published published)
+            user)))
+
+(defun create-test-posts (count &key
+                                  user
+                                  (published nil))
+  "複数のテスト用投稿を作成
+
+  引数:
+    count: 作成する投稿数
+    user: 投稿者（省略時は新規ユーザーを作成）
+    published: 共通公開フラグ
+
+  戻り値: (values posts user)"
+
+  (let ((user (or user (create-test-user))))
+    (values
+     (loop for i from 1 to count
+           collect (create-post
+                    (user-id user)
+                    (format nil "Test Post ~D" i)
+                    (format nil "Content for post ~D" i)
+                    :published published))
+     user)))

@@ -112,7 +112,8 @@
        (:module "model"
         :depends-on ("setup" "fixtures")
         :components (
-          (:file "user-test")))
+          (:file "user-test")
+          (:file "post-test")))
        (:file "service-test" :depends-on ("setup" "fixtures"))
        (:file "handler-test" :depends-on ("setup" "fixtures"))
        (:module "middleware"

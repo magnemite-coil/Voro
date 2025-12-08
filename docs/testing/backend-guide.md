@@ -105,18 +105,23 @@ Voroのテストは[Rove](https://github.com/fukamachi/rove)フレームワー�
 
 ### Model層テストの例
 
+Model層テストは以下のファイル構成で管理されています：
+- `test/model/user-test.lisp` - Userモデルのテスト
+- `test/model/post-test.lisp` - Postモデルのテスト
+
+> **注記**: 旧ファイル `test/model-test.lisp` は互換性のため残存していますが、実際のテストは上記ファイルに移行済みです。
+
 ```lisp
-;; test/model-test.lisp
-(deftest test-user-model
-  (testing "ユーザー作成とクエリ"
+;; test/model/user-test.lisp
+(deftest test-create-user
+  (with-test-environment
     (with-test-db
-      ;; トランザクション内でテスト実行
-      ;; テスト終了後は自動ロールバック
-      (let ((user (create-user :username "testuser"
-                               :password "hashed-password"
-                               :email "test@example.com")))
-        (ok (not (null user)))
-        (ok (string= (user-username user) "testuser"))))))
+      (testing "ユーザー作成の基本動作"
+        (let ((user (create-user "newuser" "password123" :email "new@example.com")))
+          (ok (not (null user))
+              "User is created")
+          (ok (string= "newuser" (user-username user))
+              "Username is set correctly"))))))
 ```
 
 ### Service層テストの例

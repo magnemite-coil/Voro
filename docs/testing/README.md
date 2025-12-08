@@ -49,10 +49,13 @@ Voroには以下のテストスイートがあります：
 - パスワードハッシュ化のテスト
 - 全32テストケース
 
-### 2. Modelテスト (`test/model-test.lisp`)
+### 2. Modelテスト
+- `test/model/user-test.lisp` - Userモデルのテスト
+- `test/model/post-test.lisp` - Postモデルのテスト
 - データベースモデルのCRUD操作
 - Mito ORMの動作確認
-- 全7テストケース
+
+> **注記**: 旧ファイル `test/model-test.lisp` は互換性のため残存していますが、テストは上記ファイルに移行済みです。
 
 ### 3. Serviceテスト (`test/service-test.lisp`)
 - ビジネスロジックのテスト
