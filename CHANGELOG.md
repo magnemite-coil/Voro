@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Test Coverage Expansion (model/post)
+
+#### New Test File
+- **test/model/post-test.lisp**: Comprehensive unit tests for Post model (separated from model-test.lisp)
+  - `test-create-post`: Basic post creation
+  - `test-create-post-published`: Creation with published flag
+  - `test-find-post-by-id`: ID search (exists/not exists/invalid ID)
+  - `test-find-posts-by-user-id-all`: Get all posts by user
+  - `test-find-posts-by-user-id-published`: Get published only
+  - `test-find-posts-by-user-id-draft`: Get draft only
+  - `test-find-posts-by-user-id-pagination`: limit/offset behavior
+  - `test-find-published-posts`: Public posts list with order verification (created_at DESC)
+  - `test-find-published-posts-pagination`: limit/offset behavior
+  - `test-count-published-posts`: Count published posts
+  - `test-count-user-posts`: Count user posts
+  - `test-post-to-alist`: alist conversion (all keys)
+  - `test-post-to-alist-timestamp-format`: ISO8601 timestamp format
+  - `test-post-accessors`: Accessor functions
+  - `test-post-timestamps`: Auto-generated created_at/updated_at
+  - `test-post-title-max-length`: Title max length (200 chars)
+  - `test-post-content-empty`: Empty content allowed
+  - 17 test cases total
+
+#### Updated Test Files
+- **test/fixtures.lisp**: Added post fixtures
+  - `create-test-post`: Create test post with optional user/title/content/published
+  - `create-test-posts`: Bulk post creation
+  - `*default-test-post-title*`: Default test post title
+  - `*default-test-post-content*`: Default test post content
+- **test/model-test.lisp**: Minimized (only NOTE comment remains)
+  - All post-related tests migrated to test/model/post-test.lisp
+
+#### System Definition
+- **voro.asd**: Added `post-test` to model module
+
+### Commits
+
+- Branch: `test/expand-coverage-web-post`
+- `1a39786` test: Add comprehensive test coverage for post model
+
+---
+
 ### Added - Test Coverage Expansion (web, main)
 
 #### New Test Files
