@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Test Coverage Expansion (web, main)
+
+#### New Test Files
+- **test/web-test.lisp**: Unit tests for web module (Caveman application definition)
+  - `test-app-instance`: *app* existence, <web> class instance verification, Lack application conversion
+  - `test-web-class-hierarchy`: <web> class definition, <app> inheritance verification
+  - 5 test cases total
+
+- **test/main-test.lisp**: Unit tests for main module (application lifecycle)
+  - `test-initialize-tables`: Table initialization success, user table existence, idempotency
+  - `test-server-state-management`: with-clean-server-state behavior, *server* definition
+  - `test-stop-idempotent`: Double stop idempotency, *server* NIL after stop
+  - `test-start-stop-cycle`: Start/stop verification with use-thread parameter
+  - `test-start-db-failure-handling`: DB connection failure error re-throw, stop called
+  - `test-start-redis-failure-handling`: Redis connection failure error re-throw, stop called
+  - 12 test cases total
+
+#### Source Code Changes
+- **src/main.lisp**: Added `use-thread` parameter to `start` function
+  - Enables background thread startup for testing
+  - Suppresses console output when use-thread is true
+
+#### System Definition
+- **voro.asd**: Added test modules
+  - `web-test` (depends on setup)
+  - `main-test` (depends on setup, fixtures)
+
+### Commits
+
+- Branch: `test/expand-coverage-web-main`
+- `3cb29a6` test: Add comprehensive test coverage for web and main modules
+
+---
+
 ### Added - Test Coverage Expansion (service/auth, util/crypto, util/request)
 
 #### Updated Test Files
