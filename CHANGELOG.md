@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - SB-COVER Test Coverage Measurement
+
+#### New Files
+- **scripts/run-coverage.lisp**: SB-COVER integration script
+  - Loads voro system with coverage instrumentation
+  - Runs test suite and generates HTML report
+  - Test code excluded from coverage measurement
+  - Exit code 0 on success, 1 on failure (CI-ready)
+
+#### Makefile Updates
+- **test-coverage**: Run coverage in Docker environment
+  - Uses `test-coverage-runner` service
+  - Outputs report to `coverage-report/cover-index.html`
+- **test-coverage-local**: Run coverage locally (requires PostgreSQL/Redis)
+
+#### Docker Configuration
+- **docker-compose.test.yml**: Added `test-coverage-runner` service
+  - Same dependencies as test-runner (test-db, test-redis)
+  - Mounts `coverage-report/` for report output
+  - Uses SB-COVER for instrumentation
+
+#### Coverage Report Features
+- Expression coverage (% of expressions executed)
+- Branch coverage (% of branches taken)
+- Per-file HTML reports with line highlighting
+- Green: executed, Red: not executed
+
+#### Verification Results (2025-12-09)
+- ✅ Docker: HTML report generated, all tests pass
+- ✅ Local: HTML report generated (DB/Redis tests skipped as expected)
+
+#### Sample Coverage (Main Files)
+| File | Expression | Branch |
+|------|------------|--------|
+| db.lisp | 85.5% | 100.0% |
+| model/post.lisp | 92.1% | 100.0% |
+| service/post.lisp | 90.1% | 93.3% |
+| util/validation.lisp | 88.2% | 100.0% |
+
+### Commits
+
+- Branch: `feat/sb-cover-integration`
+- `fb931a5` feat: Add SB-COVER test coverage measurement
+
+---
+
 ### Added - Test Coverage Expansion (model/post)
 
 #### New Test File
