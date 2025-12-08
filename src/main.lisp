@@ -29,8 +29,9 @@
 
   (log-info "Database tables initialized"))
 
-(defun start (&key (port *app-port*))
-  "アプリケーションを起動"
+(defun start (&key (port *app-port*) (use-thread nil))
+  "アプリケーションを起動
+   use-thread: t でバックグラウンドスレッドで起動（テスト用）"
   (handler-case
       (progn
         (log-info "Starting Voro application..."
@@ -52,13 +53,14 @@
               (clack:clackup voro.web:*app*
                              :server :woo
                              :port port
-                             :use-thread nil))
+                             :use-thread use-thread))
 
         (log-info "Voro started successfully"
                   :context (list :|port| port))
 
-        (format t "~%Server running at http://localhost:~D/~%" port)
-        (format t "Press Ctrl+C to stop~%~%"))
+        (unless use-thread
+          (format t "~%Server running at http://localhost:~D/~%" port)
+          (format t "Press Ctrl+C to stop~%~%")))
     (error (e)
       (log-error "Failed to start application" :error e)
       (stop)
