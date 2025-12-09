@@ -26,6 +26,7 @@
    :red-hset
    :red-hget
    :red-hgetall
+   :red-ttl
    :red-select
    :red-flushdb))
 
@@ -238,6 +239,11 @@
   "HGETALL コマンド（自動ヘルスチェック付き）"
   (ensure-redis-connected)
   (redis:red-hgetall key))
+
+(defun red-ttl (key)
+  "TTL コマンド（自動ヘルスチェック付き）"
+  (ensure-redis-connected)
+  (redis:red-ttl key))
 
 (defun red-select (db)
   "SELECT コマンド（ヘルスチェックなし - 初期接続時のみ使用）"

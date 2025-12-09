@@ -169,3 +169,157 @@
       (testing "存在しないセッション"
         (ok (not (session-exists-p "nonexistent-session-id-12345678"))
             "Returns NIL for nonexistent session")))))
+
+;;;
+;;; テスト用補助関数
+;;;
+
+(defun make-session-redis-key (session-id)
+  "テスト用: セッションIDからRedisキー名を生成
+   注: 実装の session-key と同じフォーマットを維持すること"
+  (format nil "session:~A" session-id))
+
+;;;
+;;; create-session エラーハンドリングテスト
+;;;
+
+(deftest test-create-session-redis-error
+  (with-test-environment
+    (with-test-db
+      (testing "Redis障害時のエラーハンドリング"
+        (let* ((user (create-test-user))
+               (user-id-val (user-id user))
+               (original-fn (symbol-function 'voro.redis:red-hset)))
+          (unwind-protect
+              (progn
+                ;; red-hsetをスタブ化してエラーを発生させる
+                ;; 注: 実装では red-hset → red-hset → red-expire の順で呼ばれるが、
+                ;;     最初の red-hset でエラーが発生するため red-expire のスタブは不要
+                (setf (symbol-function 'voro.redis:red-hset)
+                      (lambda (&rest args)
+                        (declare (ignore args))
+                        (error "Simulated Redis error")))
+                ;; 期待: エラーがシグナルされる
+                (handler-case
+                    (progn
+                      (create-session user-id-val)
+                      (fail "Should have signaled an error"))
+                  (error (e)
+                    ;; search は位置（整数）または NIL を返す
+                    (ok (not (null (search "Session creation failed" (princ-to-string e))))
+                        "Error message should contain 'Session creation failed'"))))
+            ;; 必ず復元
+            (setf (symbol-function 'voro.redis:red-hset) original-fn)))))))
+
+;;;
+;;; create-session created_at 検証テスト
+;;;
+
+(deftest test-create-session-created-at
+  (with-test-environment
+    (with-test-db
+      (testing "セッションにcreated_atが保存される"
+        (let* ((user (create-test-user))
+               (user-id-val (user-id user))
+               (time-before (get-universal-time))
+               (session-id (create-session user-id-val))
+               (time-after (get-universal-time))
+               (redis-key (make-session-redis-key session-id)))
+          (unwind-protect
+              (let ((created-at-str (voro.redis:red-hget redis-key "created_at")))
+                (ok (not (null created-at-str))
+                    "created_at should be stored")
+                (let ((created-at (parse-integer created-at-str)))
+                  (ok (and (>= created-at time-before)
+                           (<= created-at time-after))
+                      "created_at should be within test execution time")))
+            ;; 必ずセッションキーを削除（他テスト・Redisリソースへの影響を防止）
+            (voro.redis:red-del redis-key)))))))
+
+;;;
+;;; get-session-user-id エラーハンドリングテスト
+;;;
+
+(deftest test-get-session-user-id-error-handling
+  (with-test-environment
+    ;; パターン1: Redis障害（スタブ化）
+    (testing "Redis障害時はNILを返す"
+      (let ((original-fn (symbol-function 'voro.redis:red-hget)))
+        (unwind-protect
+            (progn
+              ;; red-hgetをスタブ化してエラーを発生させる
+              (setf (symbol-function 'voro.redis:red-hget)
+                    (lambda (&rest args)
+                      (declare (ignore args))
+                      (error "Simulated Redis error")))
+              ;; 期待: NILを返す（エラーは伝播しない）
+              (ok (null (get-session-user-id "any-session-id"))
+                  "Should return NIL on Redis error"))
+          ;; 必ず復元
+          (setf (symbol-function 'voro.redis:red-hget) original-fn))))
+
+    ;; パターン2: parse-integer失敗（実Redis使用）
+    (testing "不正なuser_id文字列（parse-integer失敗）"
+      (let* ((session-id (generate-session-id))
+             (redis-key (make-session-redis-key session-id)))
+        (unwind-protect
+            (progn
+              ;; 不正な値を直接セット
+              (voro.redis:red-hset redis-key "user_id" "not-a-number")
+              ;; 期待: NILを返す
+              (ok (null (get-session-user-id session-id))
+                  "Should return NIL for invalid user_id string"))
+          ;; 必ずキーを削除（他テストへの影響を防止）
+          (voro.redis:red-del redis-key))))))
+
+;;;
+;;; delete-session エラーハンドリングテスト
+;;;
+
+(deftest test-delete-session-error-handling
+  (with-test-environment
+    (testing "Redis障害時はNILを返す"
+      (let ((original-fn (symbol-function 'voro.redis:red-del)))
+        (unwind-protect
+            (progn
+              ;; red-delをスタブ化してエラーを発生させる
+              (setf (symbol-function 'voro.redis:red-del)
+                    (lambda (&rest args)
+                      (declare (ignore args))
+                      (error "Simulated Redis error")))
+              ;; 期待: NILを返す（エラーは伝播しない）
+              (ok (null (delete-session "any-session-id"))
+                  "Should return NIL on Redis error"))
+          ;; 必ず復元
+          (setf (symbol-function 'voro.redis:red-del) original-fn))))))
+
+;;;
+;;; セッションTTL検証テスト
+;;;
+
+(deftest test-session-ttl
+  (with-test-environment
+    (with-test-db
+      (testing "セッションにTTLが設定される"
+        (let* ((user (create-test-user))
+               (user-id-val (user-id user))
+               (session-id (create-session user-id-val))
+               (redis-key (make-session-redis-key session-id)))
+          (unwind-protect
+              (let ((ttl (voro.redis:red-ttl redis-key)))
+                ;; TTLが設定されていることを確認（0より大きい）
+                (ok (> ttl 0)
+                    "TTL should be set (> 0)")
+                ;; TTLが*session-ttl*以下であることを確認
+                (ok (<= ttl voro.config:*session-ttl*)
+                    (format nil "TTL (~A) should be <= *session-ttl* (~A)"
+                            ttl voro.config:*session-ttl*))
+                ;; TTLが*session-ttl*から2秒以内であることを確認
+                ;; 注: 短TTL環境（例: SESSION_TTL=3）でも安定するよう固定マージン方式を採用
+                ;;     - パーセンテージ方式（70%等）は短TTLで整数切り捨ての影響を受けるため不採用
+                ;;     - マージン2秒: create-session→red-ttl間のスケジューリング遅延を考慮
+                (ok (>= ttl (max 1 (- voro.config:*session-ttl* 2)))
+                    (format nil "TTL (~A) should be >= *session-ttl* - 2 (~A)"
+                            ttl (max 1 (- voro.config:*session-ttl* 2)))))
+            ;; 必ずセッションキーを削除（他テスト・Redisリソースへの影響を防止）
+            (voro.redis:red-del redis-key)))))))

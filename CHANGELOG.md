@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Test Coverage Expansion (middleware/session error handling)
+
+#### Updated Test File
+- **test/middleware/session-test.lisp**: Expanded session middleware tests (+154 lines)
+  - `test-create-session-redis-error`: Redis failure error handling (error message verification)
+  - `test-create-session-created-at`: created_at field storage verification
+  - `test-get-session-user-id-error-handling`: Redis failure returns NIL, parse-integer failure returns NIL
+  - `test-delete-session-error-handling`: Redis failure returns NIL
+  - `test-session-ttl`: TTL configuration verification (> 0, <= *session-ttl*, within 2 second margin)
+  - 5 new test cases total
+
+#### Source Code Addition
+- **src/redis.lisp**: Added `red-ttl` wrapper function
+  - TTL command with auto health check
+  - Added to package exports
+
+#### Test Helper Function
+- **make-session-redis-key**: Generate Redis key for testing
+  - Maintains same format as implementation's `session-key`
+
+#### Coverage Results
+| File | Expression | Branch |
+|------|------------|--------|
+| middleware/session.lisp | 98.2% (112/114) | 100.0% (4/4) |
+
+Target was 75%, achieved **98.2%**.
+
+### Commits
+
+- Branch: `test/session-coverage`
+- `86df5cb` test(session): expand test coverage for session middleware
+
+---
+
 ### Added - SB-COVER Test Coverage Measurement
 
 #### New Files
