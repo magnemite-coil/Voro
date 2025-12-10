@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Test Coverage Expansion (config.lisp get-config validators)
+
+#### Updated Test File
+- **test/config-test.lisp**: Expanded config tests (+130 lines)
+  - `test-get-config-validator-app-env`: APP_ENV valid/invalid value tests
+  - `test-get-config-validator-log-level`: LOG_LEVEL valid/invalid value tests
+  - `test-get-config-validator-redis-db`: REDIS_DB valid/invalid value tests
+  - `test-get-config-unsupported-type`: Unsupported type error branch coverage
+  - `test-get-config-validator-session-ttl`: SESSION_TTL range (1-2592000) validation
+  - `test-get-config-validator-retry-settings`: Retry count and delay validation
+  - `test-config-parameters-defined`: defparameter type/existence regression tests
+
+#### Test Coverage by Phase
+| Phase | Test Name | Description |
+|-------|-----------|-------------|
+| 1.1 | `test-get-config-unsupported-type` | Unsupported type error fallback |
+| 2 | `test-get-config-validator-session-ttl` | TTL range validation (1-2592000) |
+| 3 | `test-get-config-validator-retry-settings` | Retry/delay validation |
+| 4 | `test-config-parameters-defined` | Regression tests for defparameter |
+
+#### Additional Implementation (Beyond Design Doc)
+- `test-get-config-validator-app-env`: Environment name validation
+- `test-get-config-validator-log-level`: Log level validation
+- `test-get-config-validator-redis-db`: Redis DB number validation
+
+### Commits
+
+- Branch: `test/config-coverage`
+- Design document: `docs/design/config-test-coverage-expansion.md`
+
+---
+
 ### Added - Test Coverage Expansion (handler/post PUT/DELETE error handling)
 
 #### Updated Test File

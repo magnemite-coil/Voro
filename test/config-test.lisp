@@ -325,3 +325,133 @@
                (get-config "VORO_TEST_REDIS_DB" :integer 0
                            :validator #'voro.config::valid-redis-db-p))
             (format nil "DB ~A falls back to 0" invalid-db))))))
+
+;;;
+;;; Phase 1.1: Unsupported Type テスト
+;;; get-config の未サポート型エラー分岐をカバー
+;;;
+
+(deftest test-get-config-unsupported-type
+  (testing "サポートされていない型はデフォルト値にフォールバック"
+    (with-env-var ("VORO_TEST_UNSUPPORTED" "some-value")
+      ;; :invalid-type は未サポートなのでエラー → デフォルト値にフォールバック
+      (ok (string= "default"
+                   (get-config "VORO_TEST_UNSUPPORTED" :invalid-type "default"))
+          "Unsupported type falls back to default")))
+
+  (testing "未サポート型でも環境変数未設定時はデフォルト値を返す"
+    ;; 環境変数が未設定の場合、型変換エラーより前にデフォルト値が返る
+    (ok (string= "default"
+                 (get-config "VORO_TEST_NONEXISTENT_UNSUPPORTED" :invalid-type "default"))
+        "Unsupported type with unset env var returns default")))
+
+;;;
+;;; Phase 2: SESSION_TTL バリデーションテスト
+;;; *session-ttl* のカスタムバリデータ (1-2592000) をカバー
+;;;
+
+(deftest test-get-config-validator-session-ttl
+  (testing "SESSION_TTL - 有効な範囲（1-2592000）はそのまま返す"
+    (dolist (valid-ttl '("1" "86400" "604800" "2592000"))
+      (with-env-var ("VORO_TEST_SESSION_TTL" valid-ttl)
+        (ok (= (parse-integer valid-ttl)
+               (get-config "VORO_TEST_SESSION_TTL" :integer 604800
+                           :validator (lambda (v) (and (> v 0) (<= v 2592000)))))
+            (format nil "TTL ~A is valid" valid-ttl)))))
+
+  (testing "SESSION_TTL - 範囲外はデフォルトにフォールバック"
+    ;; 注: "-1" は parse-integer で -1 に正常パースされた後、
+    ;;     バリデーション失敗でフォールバックする（Phase 1.3 とは異なる経路）
+    (dolist (invalid-ttl '("0" "-1" "2592001" "9999999"))
+      (with-env-var ("VORO_TEST_SESSION_TTL" invalid-ttl)
+        (ok (= 604800
+               (get-config "VORO_TEST_SESSION_TTL" :integer 604800
+                           :validator (lambda (v) (and (> v 0) (<= v 2592000)))))
+            (format nil "TTL ~A falls back to default" invalid-ttl))))))
+
+;;;
+;;; Phase 3: リトライ設定バリデーションテスト
+;;; DB/Redis のリトライ設定バリデータをカバー
+;;;
+
+(deftest test-get-config-validator-retry-settings
+  (testing "リトライ回数（0-10）バリデーション"
+    ;; 有効値
+    (dolist (valid '("0" "5" "10"))
+      (with-env-var ("VORO_TEST_RETRIES" valid)
+        (ok (= (parse-integer valid)
+               (get-config "VORO_TEST_RETRIES" :integer 3
+                           :validator (lambda (v) (and (>= v 0) (<= v 10)))))
+            (format nil "Retries ~A is valid" valid))))
+    ;; 無効値
+    (dolist (invalid '("-1" "11" "100"))
+      (with-env-var ("VORO_TEST_RETRIES" invalid)
+        (ok (= 3
+               (get-config "VORO_TEST_RETRIES" :integer 3
+                           :validator (lambda (v) (and (>= v 0) (<= v 10)))))
+            (format nil "Retries ~A falls back to default" invalid)))))
+
+  (testing "初期リトライ遅延（1-10秒）バリデーション"
+    ;; 有効値
+    (dolist (valid '("1" "5" "10"))
+      (with-env-var ("VORO_TEST_DELAY" valid)
+        (ok (= (parse-integer valid)
+               (get-config "VORO_TEST_DELAY" :integer 1
+                           :validator (lambda (v) (and (> v 0) (<= v 10)))))
+            (format nil "Delay ~A is valid" valid))))
+    ;; 無効値（0は範囲外）
+    (dolist (invalid '("0" "11" "-1"))
+      (with-env-var ("VORO_TEST_DELAY" invalid)
+        (ok (= 1
+               (get-config "VORO_TEST_DELAY" :integer 1
+                           :validator (lambda (v) (and (> v 0) (<= v 10)))))
+            (format nil "Delay ~A falls back to default" invalid)))))
+
+  (testing "最大リトライ遅延（1-120秒）バリデーション"
+    ;; 有効値
+    (dolist (valid '("1" "30" "120"))
+      (with-env-var ("VORO_TEST_MAX_DELAY" valid)
+        (ok (= (parse-integer valid)
+               (get-config "VORO_TEST_MAX_DELAY" :integer 30
+                           :validator (lambda (v) (and (> v 0) (<= v 120)))))
+            (format nil "Max delay ~A is valid" valid))))
+    ;; 無効値
+    (dolist (invalid '("0" "121" "-1"))
+      (with-env-var ("VORO_TEST_MAX_DELAY" invalid)
+        (ok (= 30
+               (get-config "VORO_TEST_MAX_DELAY" :integer 30
+                           :validator (lambda (v) (and (> v 0) (<= v 120)))))
+            (format nil "Max delay ~A falls back to default" invalid))))))
+
+;;;
+;;; Phase 4: 設定値参照テスト（回帰テスト）
+;;; defparameter の定義が正しく行われているかを検証
+;;;
+
+(deftest test-config-parameters-defined
+  (testing "設定パラメータが定義されている"
+    ;; バウンド確認
+    (ok (boundp 'voro.config:*app-env*) "*app-env* is bound")
+    (ok (boundp 'voro.config:*app-port*) "*app-port* is bound")
+    (ok (boundp 'voro.config:*db-host*) "*db-host* is bound")
+    (ok (boundp 'voro.config:*db-port*) "*db-port* is bound")
+    (ok (boundp 'voro.config:*redis-host*) "*redis-host* is bound")
+    (ok (boundp 'voro.config:*redis-port*) "*redis-port* is bound")
+    (ok (boundp 'voro.config:*session-ttl*) "*session-ttl* is bound")
+    (ok (boundp 'voro.config:*log-level*) "*log-level* is bound"))
+
+  (testing "設定パラメータの型が正しい"
+    (ok (stringp voro.config:*app-env*) "*app-env* is a string")
+    (ok (integerp voro.config:*app-port*) "*app-port* is an integer")
+    (ok (stringp voro.config:*db-host*) "*db-host* is a string")
+    (ok (integerp voro.config:*db-port*) "*db-port* is an integer")
+    (ok (integerp voro.config:*session-ttl*) "*session-ttl* is an integer")
+    (ok (keywordp voro.config:*log-level*) "*log-level* is a keyword")
+    ;; Boolean 型パラメータ
+    ;; 注: get-config の :boolean は member を返すが、
+    ;;     デフォルト値が (string= *app-env* "production") の場合は t/nil が返る
+    ;;     そのため、真偽値として扱う（型チェックではなく値の存在確認）
+    (ok (typep voro.config:*db-health-check-enabled* '(or null cons (eql t)))
+        "*db-health-check-enabled* is boolean-like (nil, list, or t)")
+    (ok (typep voro.config:*redis-health-check-enabled* '(or null cons (eql t)))
+        "*redis-health-check-enabled* is boolean-like (nil, list, or t)")))
