@@ -708,3 +708,112 @@
                        (post (gethash "post" (gethash "data" parsed))))
                   (ok (string= (gethash "title" post) xss-title)
                       "XSS string should be stored as-is"))))))))))
+
+;;;
+;;; PUT/DELETE エラーハンドリングテスト（カバレッジ拡充）
+;;;
+
+(deftest post-update-not-found-test
+  (testing "PUT /api/posts/:id - 存在しない投稿の更新→404"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            (multiple-value-bind (body status headers)
+                (http-put "/api/posts/999999"
+                         :json (list (cons :|title| "Updated"))
+                         :cookies (list (cons "session_id" session-id)))
+              (declare (ignore body headers))
+              (assert-status 404 status))))))))
+
+(deftest post-update-validation-error-test
+  (testing "PUT /api/posts/:id - タイトル超過でバリデーションエラー→400"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            ;; 投稿作成
+            (multiple-value-bind (create-body create-status create-headers)
+                (http-post "/api/posts"
+                          :json (list (cons :|title| "Original")
+                                     (cons :|content| "Content"))
+                          :cookies (list (cons "session_id" session-id)))
+              (declare (ignore create-status create-headers))
+              (let* ((parsed (com.inuoe.jzon:parse create-body))
+                     (post-id (gethash "id" (gethash "post" (gethash "data" parsed))))
+                     (title-201 (make-string 201 :initial-element #\T)))
+                ;; 201文字タイトルで更新
+                (multiple-value-bind (body status headers)
+                    (http-put (format nil "/api/posts/~D" post-id)
+                             :json (list (cons :|title| title-201))
+                             :cookies (list (cons "session_id" session-id)))
+                  (declare (ignore body headers))
+                  (assert-status 400 status))))))))))
+
+(deftest post-delete-not-found-test
+  (testing "DELETE /api/posts/:id - 存在しない投稿の削除→404"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            (multiple-value-bind (body status headers)
+                (http-delete "/api/posts/999999"
+                            :cookies (list (cons "session_id" session-id)))
+              (declare (ignore body headers))
+              (assert-status 404 status))))))))
+
+(deftest post-update-unauthorized-test
+  (testing "PUT /api/posts/:id - 未認証エラー→401"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (body status headers)
+              (http-put "/api/posts/1"
+                       :json (list (cons :|title| "Updated")))
+            (declare (ignore body headers))
+            (assert-status 401 status)))))))
+
+(deftest post-delete-unauthorized-test
+  (testing "DELETE /api/posts/:id - 未認証エラー→401"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (body status headers)
+              (http-delete "/api/posts/1")
+            (declare (ignore body headers))
+            (assert-status 401 status)))))))
+
+(deftest post-update-invalid-id-test
+  (testing "PUT /api/posts/:id - 不正なIDでバリデーションエラー→400"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            (multiple-value-bind (body status headers)
+                (http-put "/api/posts/invalid"
+                         :json (list (cons :|title| "Updated"))
+                         :cookies (list (cons "session_id" session-id)))
+              (declare (ignore body headers))
+              (assert-status 400 status))))))))
+
+(deftest post-delete-invalid-id-test
+  (testing "DELETE /api/posts/:id - 不正なIDでバリデーションエラー→400"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            (multiple-value-bind (body status headers)
+                (http-delete "/api/posts/invalid"
+                            :cookies (list (cons "session_id" session-id)))
+              (declare (ignore body headers))
+              (assert-status 400 status))))))))

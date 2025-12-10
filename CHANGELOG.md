@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Test Coverage Expansion (handler/post PUT/DELETE error handling)
+
+#### Updated Test File
+- **test/handler/post-test.lisp**: Expanded handler/post tests (+110 lines)
+  - `post-update-not-found-test`: PUT non-existent post returns 404
+  - `post-update-validation-error-test`: PUT with validation error returns 400
+  - `post-update-unauthorized-test`: PUT without authentication returns 401
+  - `post-update-invalid-id-test`: PUT with invalid ID format returns 400
+  - `post-delete-not-found-test`: DELETE non-existent post returns 404
+  - `post-delete-unauthorized-test`: DELETE without authentication returns 401
+  - `post-delete-invalid-id-test`: DELETE with invalid ID format returns 400
+  - 7 new test cases total
+
+#### Coverage Results
+| File | Expression | Branch |
+|------|------------|--------|
+| handler/post.lisp | 72.4% (189/261) | 94.1% (16/17) |
+
+Branch coverage target (90%) achieved. Expression coverage gap due to untested 500 error handlers (requires mock library).
+
+### Commits
+
+- Branch: `test/handler-post-coverage`
+- Design document: `docs/design/handler-post-test-expansion.md`
+
+---
+
 ### Added - Test Coverage Expansion (middleware/session error handling)
 
 #### Updated Test File
