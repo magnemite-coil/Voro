@@ -817,3 +817,295 @@
                             :cookies (list (cons "session_id" session-id)))
               (declare (ignore body headers))
               (assert-status 400 status))))))))
+
+;;;
+;;; 共通ヘルパー: 500エラーレスポンス検証
+;;;
+
+(defun assert-500-error-response (body)
+  "500エラーレスポンスの形式を検証する。
+   期待形式: {\"success\": false, \"error\": \"string\", \"error_id\": \"...\"}
+   - success が false であること
+   - error が文字列であること
+   - error_id がトップレベルに存在すること"
+  (let* ((parsed (com.inuoe.jzon:parse body))
+         (success (gethash "success" parsed))
+         (error-msg (gethash "error" parsed))
+         (error-id (gethash "error_id" parsed)))
+    (ok (not success) "success should be false")
+    (ok (stringp error-msg) "error should be a string")
+    (ok error-id "error_id should exist at top level")))
+
+;;;
+;;; 境界値・エラーハンドリングテスト（カバレッジ拡充）
+;;;
+
+(deftest user-posts-invalid-id-test
+  (testing "GET /api/users/:user_id/posts - 不正なuser_id（文字列）→400"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (body status headers)
+              (http-get "/api/users/invalid/posts")
+            (declare (ignore body headers))
+            (assert-status 400 status))))))
+
+  (testing "GET /api/users/:user_id/posts - 不正なuser_id（小数）→400"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (body status headers)
+              (http-get "/api/users/1.5/posts")
+            (declare (ignore body headers))
+            (assert-status 400 status)))))))
+
+(deftest my-posts-invalid-published-param-test
+  (testing "GET /api/me/posts?published=invalid - 不正な値は:allとして扱われる"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            ;; 投稿作成（公開・非公開各1件）
+            (http-post "/api/posts"
+                      :json (list (cons :|title| "Public")
+                                 (cons :|content| "Content")
+                                 (cons :|published| t))
+                      :cookies (list (cons "session_id" session-id)))
+            (http-post "/api/posts"
+                      :json (list (cons :|title| "Draft")
+                                 (cons :|content| "Content")
+                                 (cons :|published| nil))
+                      :cookies (list (cons "session_id" session-id)))
+
+            ;; 不正なpublishedパラメータ
+            (multiple-value-bind (body status headers)
+                (http-get "/api/me/posts?published=invalid"
+                         :cookies (list (cons "session_id" session-id)))
+              (declare (ignore headers))
+              (assert-status 200 status)
+              ;; :all として扱われるため、両方の投稿が返る
+              (let* ((parsed (com.inuoe.jzon:parse body))
+                     (posts (gethash "posts" (gethash "data" parsed))))
+                (ok (= (length posts) 2)
+                    "Should return all posts when published param is invalid")))))))))
+
+(deftest post-create-whitespace-content-test
+  (testing "POST /api/posts - 空白のみのコンテンツは400"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            (multiple-value-bind (body status headers)
+                (http-post "/api/posts"
+                          :json (list (cons :|title| "Valid Title")
+                                     (cons :|content| "   "))
+                          :cookies (list (cons "session_id" session-id)))
+              (declare (ignore headers))
+              (assert-status 400 status)
+              ;; エラーメッセージの内容を検証
+              (let* ((parsed (com.inuoe.jzon:parse body))
+                     (error-msg (gethash "error" parsed)))
+                (ok (search "content" (string-downcase error-msg))
+                    "Error message should mention content validation")))))))))
+
+(deftest post-update-whitespace-content-test
+  (testing "PUT /api/posts/:id - 空白のみのコンテンツ更新は400"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            ;; 投稿作成
+            (multiple-value-bind (create-body create-status create-headers)
+                (http-post "/api/posts"
+                          :json (list (cons :|title| "Original")
+                                     (cons :|content| "Original Content"))
+                          :cookies (list (cons "session_id" session-id)))
+              (declare (ignore create-status create-headers))
+              (let* ((parsed (com.inuoe.jzon:parse create-body))
+                     (post-id (gethash "id" (gethash "post" (gethash "data" parsed)))))
+                ;; 空白コンテンツで更新試行
+                (multiple-value-bind (body status headers)
+                    (http-put (format nil "/api/posts/~D" post-id)
+                             :json (list (cons :|content| "   "))
+                             :cookies (list (cons "session_id" session-id)))
+                  (declare (ignore headers))
+                  (assert-status 400 status)
+                  ;; エラーメッセージの内容を検証
+                  (let* ((parsed (com.inuoe.jzon:parse body))
+                         (error-msg (gethash "error" parsed)))
+                    (ok (search "content" (string-downcase error-msg))
+                        "Error message should mention content validation")))))))))))
+
+(deftest post-list-internal-error-test
+  (testing "GET /api/posts - サービス層エラー時は500を返す"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          ;; list-published-posts を一時的に上書きしてエラーを発生させる
+          (let ((original-fn #'voro.service.post:list-published-posts))
+            (setf (fdefinition 'voro.service.post:list-published-posts)
+                  (lambda (&rest args)
+                    (declare (ignore args))
+                    (error "Simulated database error")))
+            (unwind-protect
+                (multiple-value-bind (body status headers)
+                    (http-get "/api/posts")
+                  (declare (ignore headers))
+                  (assert-status 500 status)
+                  (assert-500-error-response body))
+              ;; 必ず元の関数を復元
+              (setf (fdefinition 'voro.service.post:list-published-posts) original-fn))))))))
+
+(deftest post-list-explicit-pagination-test
+  (testing "GET /api/posts?page=2&per_page=5 - 明示的なページネーション"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (body status headers)
+              (http-get "/api/posts?page=2&per_page=5")
+            (declare (ignore headers))
+            (assert-status 200 status)
+            (let* ((parsed (com.inuoe.jzon:parse body))
+                   (pagination (gethash "pagination" (gethash "data" parsed))))
+              (ok pagination "pagination should exist")
+              (ok (= (gethash "page" pagination) 2) "page should be 2")
+              (ok (= (gethash "per_page" pagination) 5) "per_page should be 5")
+              ;; total_count と total_pages も検証（0件の場合）
+              (ok (integerp (gethash "total_count" pagination)) "total_count should be an integer")
+              (ok (integerp (gethash "total_pages" pagination)) "total_pages should be an integer")))))))
+
+  (testing "GET /api/posts?page=invalid - 不正なpage値はデフォルト1"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (body status headers)
+              (http-get "/api/posts?page=invalid")
+            (declare (ignore headers))
+            (assert-status 200 status)
+            (let* ((parsed (com.inuoe.jzon:parse body))
+                   (pagination (gethash "pagination" (gethash "data" parsed))))
+              (ok (= (gethash "page" pagination) 1) "invalid page should default to 1")))))))
+
+  (testing "GET /api/posts?per_page=invalid - 不正なper_page値はデフォルト20"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (body status headers)
+              (http-get "/api/posts?per_page=invalid")
+            (declare (ignore headers))
+            (assert-status 200 status)
+            (let* ((parsed (com.inuoe.jzon:parse body))
+                   (pagination (gethash "pagination" (gethash "data" parsed))))
+              (ok (= (gethash "per_page" pagination) 20) "invalid per_page should default to 20")))))))
+
+  (testing "GET /api/posts - 0件時のpaginationオブジェクト構築"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          ;; テスト環境は毎回ロールバックされるため、初期状態は0件
+          (multiple-value-bind (body status headers)
+              (http-get "/api/posts")
+            (declare (ignore headers))
+            (assert-status 200 status)
+            (let* ((parsed (com.inuoe.jzon:parse body))
+                   (data (gethash "data" parsed))
+                   (posts (gethash "posts" data))
+                   (pagination (gethash "pagination" data)))
+              ;; 0件時の検証
+              (ok (zerop (length posts)) "posts should be empty")
+              (ok (= (gethash "total_count" pagination) 0) "total_count should be 0")
+              (ok (= (gethash "total_pages" pagination) 0) "total_pages should be 0 when no posts")))))))
+
+  (testing "GET /api/posts?page=99999 - 上限超えpage値は+page-max+に正規化"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (body status headers)
+              (http-get "/api/posts?page=99999")
+            (declare (ignore headers))
+            (assert-status 200 status)
+            (let* ((parsed (com.inuoe.jzon:parse body))
+                   (pagination (gethash "pagination" (gethash "data" parsed))))
+              ;; service/post.lisp の +page-max+ (10000) に正規化される
+              (ok (= (gethash "page" pagination) 10000) "page should be clamped to 10000"))))))))
+
+(deftest post-create-internal-error-test
+  (testing "POST /api/posts - サービス層エラー時は500を返す（認証・バリデーション通過後）"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            ;; create-new-post を一時的に上書きしてエラーを発生させる
+            (let ((original-fn #'voro.service.post:create-new-post))
+              (setf (fdefinition 'voro.service.post:create-new-post)
+                    (lambda (&rest args)
+                      (declare (ignore args))
+                      (error "Simulated database error")))
+              (unwind-protect
+                  (multiple-value-bind (body status headers)
+                      (http-post "/api/posts"
+                                :json (list (cons :|title| "Valid Title")
+                                           (cons :|content| "Valid Content"))
+                                :cookies (list (cons "session_id" session-id)))
+                    (declare (ignore headers))
+                    (assert-status 500 status)
+                    (assert-500-error-response body))
+                ;; 必ず元の関数を復元
+                (setf (fdefinition 'voro.service.post:create-new-post) original-fn)))))))))
+
+(deftest user-posts-internal-error-test
+  (testing "GET /api/users/:user_id/posts - サービス層エラー時は500を返す（ユーザー存在確認通過後）"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          ;; テスト用ユーザーを作成
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore session-id))
+            (let ((user-id (voro.model.user:user-id user)))
+              ;; list-user-posts を一時的に上書きしてエラーを発生させる
+              (let ((original-fn #'voro.service.post:list-user-posts))
+                (setf (fdefinition 'voro.service.post:list-user-posts)
+                      (lambda (&rest args)
+                        (declare (ignore args))
+                        (error "Simulated database error")))
+                (unwind-protect
+                    (multiple-value-bind (body status headers)
+                        (http-get (format nil "/api/users/~D/posts" user-id))
+                      (declare (ignore headers))
+                      (assert-status 500 status)
+                      (assert-500-error-response body))
+                  ;; 必ず元の関数を復元
+                  (setf (fdefinition 'voro.service.post:list-user-posts) original-fn))))))))))
+
+(deftest my-posts-internal-error-test
+  (testing "GET /api/me/posts - サービス層エラー時は500を返す（認証・publishedパラメータ変換通過後）"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            ;; list-my-posts を一時的に上書きしてエラーを発生させる
+            (let ((original-fn #'voro.service.post:list-my-posts))
+              (setf (fdefinition 'voro.service.post:list-my-posts)
+                    (lambda (&rest args)
+                      (declare (ignore args))
+                      (error "Simulated database error")))
+              (unwind-protect
+                  (multiple-value-bind (body status headers)
+                      (http-get "/api/me/posts"
+                               :cookies (list (cons "session_id" session-id)))
+                    (declare (ignore headers))
+                    (assert-status 500 status)
+                    (assert-500-error-response body))
+                ;; 必ず元の関数を復元
+                (setf (fdefinition 'voro.service.post:list-my-posts) original-fn)))))))))
