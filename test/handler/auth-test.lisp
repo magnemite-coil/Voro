@@ -206,26 +206,42 @@
 ;;; HA-01: 登録時の内部エラーテスト
 ;;;
 
+(defun assert-500-error-response (body)
+  "500エラーレスポンスの形式を検証する。
+   期待形式: {\"success\": false, \"error\": \"string\", \"error_id\": \"...\"}
+   - success が false であること
+   - error が文字列であること
+   - error_id がトップレベルに存在すること"
+  (let* ((parsed (com.inuoe.jzon:parse body))
+         (success (gethash "success" parsed))
+         (error-msg (gethash "error" parsed))
+         (error-id (gethash "error_id" parsed)))
+    (ok (not success) "success should be false")
+    (ok (stringp error-msg) "error should be a string")
+    (ok error-id "error_id should exist at top level")))
+
 (deftest auth-register-internal-error-test
   (testing "POST /api/auth/register - 内部エラー時は500を返す"
     (with-test-environment
       (with-test-server
-        ;; service層の register-user がエラーをスローするようモック
-        ;; これにより handler 層の (error (e) ...) 分岐に到達
-        ;; with-test-db 不要: service層をモックするためDB操作は発生しない
-        (with-mocked-function (voro.service.auth:register-user
-                                (lambda (username password &key email)
-                                  (declare (ignore username password email))
-                                  (error "Simulated internal error")))
-          ;; HTTPリクエスト送信
-          (multiple-value-bind (body status headers)
-              (http-post "/api/auth/register"
-                        :json (list (cons :|username| "testuser")
-                                   (cons :|password| "ValidPass123")
-                                   (cons :|email| "test@example.com")))
-            (declare (ignore headers))
-            ;; ステータスコード検証
-            (assert-status 500 status)
-            ;; レスポンスボディ検証（JSON構造で検証）
-            (assert-json-response body "error")
-            (assert-json-response body "error_id")))))))))
+        (with-test-db
+          ;; register-user を一時的に上書きしてエラーを発生させる
+          ;; post-test.lisp と同じ fdefinition パターンを使用
+          (let ((original-fn #'voro.service.auth:register-user))
+            (setf (fdefinition 'voro.service.auth:register-user)
+                  (lambda (username password &key email)
+                    (declare (ignore username password email))
+                    (error "Simulated internal error")))
+            (unwind-protect
+                (multiple-value-bind (body status headers)
+                    (http-post "/api/auth/register"
+                              :json (list (cons :|username| "testuser")
+                                         (cons :|password| "ValidPass123")
+                                         (cons :|email| "test@example.com")))
+                  (declare (ignore headers))
+                  ;; ステータスコード検証
+                  (assert-status 500 status)
+                  ;; レスポンスボディ検証
+                  (assert-500-error-response body))
+              ;; 必ず元の関数を復元
+              (setf (fdefinition 'voro.service.auth:register-user) original-fn))))))))))
