@@ -120,8 +120,21 @@
         :depends-on ("setup" "fixtures")
         :components (
           (:file "session-test")))
+
+       ;; モックユーティリティ
+       (:module "helper"
+        :depends-on ("setup")
+        :components (
+          (:file "mock")))
+
+       ;; service層テスト
+       (:module "service"
+        :depends-on ("setup" "fixtures" "helper")
+        :components (
+          (:file "auth-test")))
+
        (:module "handler"
-        :depends-on ("setup" "fixtures" "http-helper")
+        :depends-on ("setup" "fixtures" "http-helper" "helper")
         :components (
           (:file "auth-test")
           (:file "post-test")))

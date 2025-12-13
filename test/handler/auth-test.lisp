@@ -11,7 +11,9 @@
                 :assert-json-response
                 :assert-cookie)
   (:import-from :voro.test.fixtures
-                :create-test-user))
+                :create-test-user)
+  (:import-from :voro.test.helper.mock
+                :with-mocked-function))
 
 (in-package :voro.test.handler.auth)
 
@@ -198,4 +200,32 @@
                                    (first set-cookie-raw)
                                    set-cookie-raw)))
               (ok (and set-cookie (search "Max-Age=0" set-cookie))
-                  "Session cookie cleared with Max-Age=0"))))))))
+                  "Session cookie cleared with Max-Age=0"))))))
+
+;;;
+;;; HA-01: 登録時の内部エラーテスト
+;;;
+
+(deftest auth-register-internal-error-test
+  (testing "POST /api/auth/register - 内部エラー時は500を返す"
+    (with-test-environment
+      (with-test-server
+        ;; service層の register-user がエラーをスローするようモック
+        ;; これにより handler 層の (error (e) ...) 分岐に到達
+        ;; with-test-db 不要: service層をモックするためDB操作は発生しない
+        (with-mocked-function (voro.service.auth:register-user
+                                (lambda (username password &key email)
+                                  (declare (ignore username password email))
+                                  (error "Simulated internal error")))
+          ;; HTTPリクエスト送信
+          (multiple-value-bind (body status headers)
+              (http-post "/api/auth/register"
+                        :json (list (cons :|username| "testuser")
+                                   (cons :|password| "ValidPass123")
+                                   (cons :|email| "test@example.com")))
+            (declare (ignore headers))
+            ;; ステータスコード検証
+            (assert-status 500 status)
+            ;; レスポンスボディ検証（JSON構造で検証）
+            (assert-json-response body "error")
+            (assert-json-response body "error_id")))))))))

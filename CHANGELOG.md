@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Test Coverage Expansion (auth service/handler error handling)
+
+#### New Test Files
+- **test/helper/mock.lisp**: Mock utility for testing error scenarios
+  - `with-mocked-function`: Temporarily replaces functions with mock implementations
+  - Uses `unwind-protect` for safe cleanup
+
+- **test/service/auth-test.lisp**: Service layer error handling tests
+  - `test-register-user-db-error` (SA-01): DB connection error handling
+  - `test-register-user-session-error` (SA-02): Redis session error handling
+  - `test-authenticate-user-db-error` (SA-03): DB error returns NIL safely
+  - `test-authenticate-user-session-error` (SA-04): Redis error returns NIL safely
+
+#### Updated Test Files
+- **test/handler/auth-test.lisp**: Added internal error test
+  - `auth-register-internal-error-test` (HA-01): 500 response with error_id
+
+- **test/http-helper.lisp**: Added `:worker-num 1` for mock test compatibility
+
+- **voro.asd**: Added test modules (helper, service/auth)
+
+#### Test Coverage Results
+| File | Before | After | Target | Status |
+|------|--------|-------|--------|--------|
+| service/auth.lisp | 79.3% | 98.2% | 89% | Exceeded |
+| handler/auth.lisp | 78.7% | 78.7% | 81% | Pending |
+
+#### Notes
+- Service layer tests (SA-01~SA-04) successfully improved coverage
+- Handler layer HTTP mock test (HA-01) requires further investigation
+
+---
+
 ### Added - Test Coverage Expansion (config.lisp get-config validators)
 
 #### Updated Test File
