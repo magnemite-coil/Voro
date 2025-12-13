@@ -223,25 +223,23 @@
 (deftest auth-register-internal-error-test
   (testing "POST /api/auth/register - 内部エラー時は500を返す"
     (with-test-environment
-      (with-test-server
-        (with-test-db
-          ;; register-user を一時的に上書きしてエラーを発生させる
-          ;; post-test.lisp と同じ fdefinition パターンを使用
-          (let ((original-fn #'voro.service.auth:register-user))
-            (setf (fdefinition 'voro.service.auth:register-user)
-                  (lambda (username password &key email)
-                    (declare (ignore username password email))
-                    (error "Simulated internal error")))
-            (unwind-protect
-                (multiple-value-bind (body status headers)
-                    (http-post "/api/auth/register"
-                              :json (list (cons :|username| "testuser")
-                                         (cons :|password| "ValidPass123")
-                                         (cons :|email| "test@example.com")))
-                  (declare (ignore headers))
-                  ;; ステータスコード検証
-                  (assert-status 500 status)
-                  ;; レスポンスボディ検証
-                  (assert-500-error-response body))
-              ;; 必ず元の関数を復元
-              (setf (fdefinition 'voro.service.auth:register-user) original-fn))))))))))
+      ;; モックを先に適用してからサーバーを起動し、Wooスレッド側でもモックが効くことを保証
+      (let ((register-called nil))
+        (with-mocked-function (voro.service.auth:register-user
+                                (lambda (username password &key email)
+                                  (declare (ignore username password email))
+                                  (setf register-called t)
+                                  (error "Simulated internal error")))
+          (with-test-server
+            (multiple-value-bind (body status headers)
+                (http-post "/api/auth/register"
+                          :json (list (cons :|username| "testuser")
+                                     (cons :|password| "ValidPass123")
+                                     (cons :|email| "test@example.com")))
+              (declare (ignore headers))
+              ;; ステータスコード検証
+              (assert-status 500 status)
+              ;; レスポンスボディ検証
+              (assert-500-error-response body)
+              ;; モックが呼ばれたことを確認（スレッド跨ぎでも状態が共有される）
+              (ok register-called "service側のregister-userが呼ばれていること"))))))))))
