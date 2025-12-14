@@ -200,7 +200,7 @@
                                    (first set-cookie-raw)
                                    set-cookie-raw)))
               (ok (and set-cookie (search "Max-Age=0" set-cookie))
-                  "Session cookie cleared with Max-Age=0"))))))
+                  "Session cookie cleared with Max-Age=0"))))))))
 
 ;;;
 ;;; HA-01: 登録時の内部エラーテスト
