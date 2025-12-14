@@ -40,6 +40,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Handler layer coverage target revised to 78.7% due to sb-cover limitation with Woo threads
 - HA-01/HA-02 tests work correctly (verified by response validation), but coverage not recorded by sb-cover
 
+#### Commits
+- Branch: `test/auth-coverage-expansion`
+- PR: https://github.com/magnemite-coil/Voro/pull/33
+- Design document: `docs/design/auth-test-coverage-expansion.md`
+
 ---
 
 ### Added - Test Coverage Expansion (config.lisp get-config validators)
