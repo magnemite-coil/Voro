@@ -70,6 +70,7 @@
             (clack:clackup app
                           :server :woo
                           :port *test-server-port*
+                          :worker-num 1  ;; モックテスト用: シングルワーカを明示
                           :use-default-middlewares nil
                           :debug nil
                           :silent t)))))

@@ -11,7 +11,9 @@
                 :assert-json-response
                 :assert-cookie)
   (:import-from :voro.test.fixtures
-                :create-test-user))
+                :create-test-user)
+  (:import-from :voro.test.helper.mock
+                :with-mocked-function))
 
 (in-package :voro.test.handler.auth)
 
@@ -199,3 +201,81 @@
                                    set-cookie-raw)))
               (ok (and set-cookie (search "Max-Age=0" set-cookie))
                   "Session cookie cleared with Max-Age=0"))))))))
+
+;;;
+;;; HA-01: 登録時の内部エラーテスト
+;;;
+
+(defun assert-500-error-response (body)
+  "500エラーレスポンスの形式を検証する。
+   期待形式: {\"success\": false, \"error\": \"string\", \"error_id\": \"...\"}
+   - success が false であること
+   - error が文字列であること
+   - error_id がトップレベルに存在すること"
+  (let* ((parsed (com.inuoe.jzon:parse body))
+         (success (gethash "success" parsed))
+         (error-msg (gethash "error" parsed))
+         (error-id (gethash "error_id" parsed)))
+    (ok (not success) "success should be false")
+    (ok (stringp error-msg) "error should be a string")
+    (ok error-id "error_id should exist at top level")))
+
+(deftest auth-register-internal-error-test
+  (testing "POST /api/auth/register - 内部エラー時は500を返す"
+    (with-test-environment
+      ;; モックを先に適用してからサーバーを起動し、Wooスレッド側でもモックが効くことを保証
+      (let ((register-called nil))
+        (with-mocked-function (voro.service.auth:register-user
+                                (lambda (username password &key email)
+                                  (declare (ignore username password email))
+                                  (setf register-called t)
+                                  (error "Simulated internal error")))
+          (with-test-server
+            (multiple-value-bind (body status headers)
+                (http-post "/api/auth/register"
+                          :json (list (cons :|username| "testuser")
+                                     (cons :|password| "ValidPass123")
+                                     (cons :|email| "test@example.com")))
+              (declare (ignore headers))
+              ;; ステータスコード検証
+              (assert-status 500 status)
+              ;; レスポンスボディ検証
+              (assert-500-error-response body)
+              ;; モックが呼ばれたことを確認（スレッド跨ぎでも状態が共有される）
+              (ok register-called "service側のregister-userが呼ばれていること"))))))))
+
+;;;
+;;; HA-02: ログイン時のservice層エラーハンドリング検証テスト
+;;;
+;;; 注意: handler/auth.lisp のログインルートには一般エラーハンドラ (error (e) ...) がない。
+;;; authenticate-user は内部でエラーを捕捉して NIL を返す設計のため、
+;;; handler層では authenticate-user の戻り値が NIL の場合に 401 を返す。
+;;;
+;;; このテストの目的:
+;;; - service層のエラーハンドリングが正常に機能し NIL を返すこと
+;;; - handler層が NIL に対して 401 を返すこと
+;;; を検証する。
+;;;
+;;; カバレッジ貢献: なし（SA-03で既にカバー済みの分岐を通るのみ）
+;;; 価値: service層とhandler層の連携が異常系でも正しく動作することを保証
+;;;
+
+(deftest auth-login-service-error-handling-test
+  (testing "POST /api/auth/login - service層エラー時は401を返す（エラーが飲み込まれNILになる）"
+    (with-test-environment
+      ;; モックを先に適用してからサーバーを起動（HA-01と同じパターン）
+      (with-mocked-function (voro.model.user:find-user-by-username
+                              (lambda (username)
+                                (declare (ignore username))
+                                (error "Database connection failed")))
+        (with-test-server
+          ;; HTTPリクエスト送信
+          (multiple-value-bind (body status headers)
+              (http-post "/api/auth/login"
+                        :json (list (cons :|username| "testuser")
+                                   (cons :|password| "ValidPass123")))
+            (declare (ignore headers))
+            ;; ステータスコード検証: service層がNILを返すため401
+            (assert-status 401 status)
+            ;; レスポンスボディ検証（JSON構造で検証）
+            (assert-json-response body "error")))))))
