@@ -136,6 +136,31 @@
 ;;; セットアップ・終了処理
 ;;;
 
+(defun ensure-fk-constraints ()
+  "FK制約が存在しない場合は追加する
+
+   注: MitoはDBレベルのFK制約を自動生成しないため、手動で追加する。
+       冪等性を持たせるため、存在確認後に追加する。"
+  (handler-case
+      (progn
+        ;; FK制約が存在するか確認
+        (let* ((query (dbi:prepare mito.connection:*connection*
+                        "SELECT 1 FROM information_schema.table_constraints
+                         WHERE constraint_name = 'fk_post_user_id'
+                         AND table_name = 'post'"))
+               (result (dbi:execute query))
+               (row (dbi:fetch result)))
+          (unless row
+            ;; FK制約が存在しない場合は追加
+            (mito:execute-sql
+              "ALTER TABLE post
+               ADD CONSTRAINT fk_post_user_id
+               FOREIGN KEY (user_id) REFERENCES \"user\"(id)
+               ON DELETE RESTRICT ON UPDATE CASCADE"))))
+    (error (e)
+      (format *error-output*
+              "Warning: Failed to add FK constraint: ~A~%" e))))
+
 (defun setup-test-environment ()
   "テスト環境をセットアップ
 
@@ -148,7 +173,8 @@
     2. データベース接続
     3. Redis接続
     4. テーブル作成（存在しない場合）
-    5. データクリーンアップ"
+    5. FK制約追加（存在しない場合）
+    6. データクリーンアップ"
 
   ;; 8層防御: 層1-4の検証
   (verify-test-database)
@@ -165,6 +191,9 @@
   ;; 8層防御: 層6 - テーブル存在確認（存在しない場合は作成）
   (ensure-table-exists 'voro.model.user:user)
   (ensure-table-exists 'voro.model.post:post)
+
+  ;; FK制約追加（DBレベルの整合性保証）
+  (ensure-fk-constraints)
 
   ;; データクリーンアップ
   (cleanup-test-data))
