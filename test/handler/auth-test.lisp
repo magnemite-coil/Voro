@@ -242,4 +242,40 @@
               ;; レスポンスボディ検証
               (assert-500-error-response body)
               ;; モックが呼ばれたことを確認（スレッド跨ぎでも状態が共有される）
-              (ok register-called "service側のregister-userが呼ばれていること"))))))))))
+              (ok register-called "service側のregister-userが呼ばれていること"))))))))
+
+;;;
+;;; HA-02: ログイン時のservice層エラーハンドリング検証テスト
+;;;
+;;; 注意: handler/auth.lisp のログインルートには一般エラーハンドラ (error (e) ...) がない。
+;;; authenticate-user は内部でエラーを捕捉して NIL を返す設計のため、
+;;; handler層では authenticate-user の戻り値が NIL の場合に 401 を返す。
+;;;
+;;; このテストの目的:
+;;; - service層のエラーハンドリングが正常に機能し NIL を返すこと
+;;; - handler層が NIL に対して 401 を返すこと
+;;; を検証する。
+;;;
+;;; カバレッジ貢献: なし（SA-03で既にカバー済みの分岐を通るのみ）
+;;; 価値: service層とhandler層の連携が異常系でも正しく動作することを保証
+;;;
+
+(deftest auth-login-service-error-handling-test
+  (testing "POST /api/auth/login - service層エラー時は401を返す（エラーが飲み込まれNILになる）"
+    (with-test-environment
+      ;; モックを先に適用してからサーバーを起動（HA-01と同じパターン）
+      (with-mocked-function (voro.model.user:find-user-by-username
+                              (lambda (username)
+                                (declare (ignore username))
+                                (error "Database connection failed")))
+        (with-test-server
+          ;; HTTPリクエスト送信
+          (multiple-value-bind (body status headers)
+              (http-post "/api/auth/login"
+                        :json (list (cons :|username| "testuser")
+                                   (cons :|password| "ValidPass123")))
+            (declare (ignore headers))
+            ;; ステータスコード検証: service層がNILを返すため401
+            (assert-status 401 status)
+            ;; レスポンスボディ検証（JSON構造で検証）
+            (assert-json-response body "error")))))))
