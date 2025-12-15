@@ -56,6 +56,71 @@
 (ql:quickload :voro :silent t)
 
 ;;; ============================================================
+;;; 4.5 環境チェック
+;;; ============================================================
+;;; 注: この関数定義はvoroシステムのロード後に配置する必要がある
+;;;     (voro.db, voro.redis パッケージが利用可能になった後)
+
+(defun check-test-prerequisites ()
+  "テスト実行前の環境チェック
+
+  注意: 環境変数の自動設定は行わない（安全性のため）。
+  未設定の場合は警告を出してユーザーに設定を促す。"
+
+  ;; 環境変数チェック（警告のみ、自動設定しない）
+  (let ((app-env (uiop:getenv "APP_ENV"))
+        (test-mode (uiop:getenv "TEST_MODE")))
+
+    (unless (string= app-env "test")
+      (format *error-output*
+              "~%WARNING: APP_ENV is not 'test' (current: ~A)~%~
+               Please set: export APP_ENV=test~%"
+              (or app-env "unset")))
+
+    (unless (string= test-mode "true")
+      (format *error-output*
+              "~%WARNING: TEST_MODE is not 'true'~%~
+               Please set: export TEST_MODE=true~%")))
+
+  ;; DB接続テスト
+  (format t "~%Checking database connection...~%")
+  (handler-case
+      (progn
+        (voro.db:connect-db)
+        (voro.db:disconnect-db)
+        (format t "  Database connection: OK~%")
+        t)
+    (error (e)
+      (format *error-output*
+              "~%ERROR: Database connection failed~%~
+               Error: ~A~%~
+               ~%To run tests with coverage:~%~
+                 1. Docker (recommended): make test-coverage~%~
+                 2. Local: createdb voro_test && redis-server~%~
+                    export APP_ENV=test TEST_MODE=true~%~
+                    make test-coverage-local~%"
+              e)
+      (sb-ext:exit :code 1)))
+
+  ;; Redis接続テスト
+  (format t "Checking Redis connection...~%")
+  (handler-case
+      (progn
+        (voro.redis:connect-redis)
+        (voro.redis:disconnect-redis)
+        (format t "  Redis connection: OK~%")
+        t)
+    (error (e)
+      (format *error-output*
+              "~%WARNING: Redis connection failed: ~A~%~
+               Some tests may be skipped.~%" e)))
+
+  (format t "~%Environment check completed.~%~%"))
+
+;; 環境チェックを実行
+(check-test-prerequisites)
+
+;;; ============================================================
 ;;; 5. 計測ポリシーの無効化（テストコード用）
 ;;; ============================================================
 

@@ -394,3 +394,74 @@
               "Post with empty content is created")
           (ok (string= "" (post-content post))
               "Content is empty string"))))))
+
+;;;
+;;; 追加: エッジケーステスト
+;;;
+
+(deftest test-create-post-nonexistent-user-id
+  (with-test-environment
+    (with-test-db
+      (testing "存在しないuser_idで投稿作成 → エラー"
+        ;; create-post は内部で find-user-by-id を呼び出し、
+        ;; ユーザーが見つからない場合は error をシグナルする
+        ;; （FK制約違反の前にアプリケーション層でチェック）
+        ;; 注: (error ...) は simple-error 条件をシグナルする
+        (ok (signals (create-post 999999 "Orphan Post" "Content")
+                     'simple-error)
+            "Nonexistent user_id raises error")))))
+
+(deftest test-create-post-empty-title
+  (with-test-environment
+    (with-test-db
+      (testing "空文字タイトルはModel層で許可（バリデーションはService/Handler層で実施予定）"
+        ;; 注: Model層はDBアクセスの抽象化に専念し、バリデーションは上位層で実施
+        ;; 将来的にService層で空タイトルを拒否するバリデーションを追加予定
+        (let* ((user (create-test-user))
+               (post (create-post (user-id user) "" "Content")))
+          (ok (not (null post))
+              "Empty title is allowed at Model layer")
+          (ok (string= "" (post-title post))
+              "Title is empty string"))))))
+
+(deftest test-find-posts-by-nonexistent-user
+  (with-test-environment
+    (with-test-db
+      (testing "存在しないuser_idで検索 → 空リスト（NIL）"
+        (let ((posts (find-posts-by-user-id 999999)))
+          (ok (null posts)
+              "Returns NIL (empty list) for nonexistent user_id"))))))
+
+(deftest test-count-user-posts-nonexistent-user
+  (with-test-environment
+    (with-test-db
+      (testing "存在しないuser_idでカウント → 0"
+        (ok (= 0 (count-user-posts 999999 :published :all))
+            "Count is 0 for nonexistent user")
+        (ok (= 0 (count-user-posts 999999 :published t))
+            "Published count is 0 for nonexistent user")
+        (ok (= 0 (count-user-posts 999999 :published nil))
+            "Draft count is 0 for nonexistent user")))))
+
+(deftest test-create-post-very-long-content
+  (with-test-environment
+    (with-test-db
+      (testing "非常に長いcontent（TEXT型は制限なし）"
+        (let* ((user (create-test-user))
+               (long-content (make-string 100000 :initial-element #\a))
+               (post (create-post (user-id user) "Title" long-content)))
+          (ok (not (null post))
+              "Post with very long content is created")
+          (ok (= 100000 (length (post-content post)))
+              "Content length is preserved"))))))
+
+(deftest test-post-to-alist-published-false
+  (with-test-environment
+    (with-test-db
+      (testing "非公開投稿のalist変換"
+        (let* ((user (create-test-user))
+               (post (create-post (user-id user) "Draft" "Content" :published nil))
+               (alist (post-to-alist post)))
+          ;; published が NIL の場合の挙動確認
+          (ok (null (cdr (assoc :|published| alist)))
+              "published is NIL/false in alist"))))))
