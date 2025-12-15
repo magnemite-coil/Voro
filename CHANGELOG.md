@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Model Layer Test Coverage Expansion
+
+#### Coverage Results
+| File | Expression | Branch | Target | Status |
+|------|------------|--------|--------|--------|
+| model/user.lisp | 92.3% (36/39) | - | 80% | ✅ Exceeded |
+| model/post.lisp | 93.0% (133/143) | 83.3% (5/6) | 80% | ✅ Exceeded |
+
+#### New Test Cases
+- **test/model/user-test.lisp**: Added edge case tests
+  - `test-create-user-empty-username`: Empty username validation at Model layer
+  - `test-create-user-special-characters`: Special characters and Japanese username
+  - `test-verify-user-password-nil-user`: NIL user error handling
+
+- **test/model/post-test.lisp**: Added edge case tests
+  - `test-create-post-nonexistent-user-id`: FK constraint validation
+  - `test-create-post-empty-title`: Empty title validation at Model layer
+  - `test-find-posts-by-nonexistent-user`: Non-existent user returns empty list
+  - `test-count-user-posts-nonexistent-user`: Non-existent user returns 0
+  - `test-create-post-very-long-content`: TEXT type unlimited content
+  - `test-post-to-alist-published-false`: Unpublished post alist conversion
+
+#### Infrastructure Improvements
+- **scripts/run-coverage.lisp**: Added environment check function
+  - DB/Redis connection validation before tests
+  - Clear error messages for missing environment setup
+
+- **docs/testing/README.md**: Added coverage measurement instructions
+  - Docker environment commands
+  - Local environment setup guide
+
+#### Database Schema
+- **src/model/post.lisp**: Added FK constraint for post.user_id
+- **test/setup.lisp**: Added `ensure-fk-constraints` function
+- **scripts/add-fk-constraint.sql**: Migration script for production
+
+#### Commits
+- Branch: `test/model-layer-coverage`
+- Design document: `docs/design/model-layer-test-expansion.md`
+
+---
+
 ### Added - Test Coverage Expansion (auth service/handler error handling)
 
 #### New Test Files
