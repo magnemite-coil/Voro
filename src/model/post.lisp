@@ -1,5 +1,9 @@
 (defpackage voro.model.post
   (:use :cl :mito)
+  (:import-from :voro.model.user
+                :user
+                :user-id
+                :find-user-by-id)
   (:import-from :local-time
                 :format-timestring
                 :+iso-8601-format+)
@@ -7,6 +11,7 @@
    :post
    :post-id
    :post-user-id
+   :post-user
    :post-title
    :post-content
    :post-published
@@ -24,12 +29,17 @@
 
 ;;; モデル定義
 ;;; 注意: スロット名はハイフン区切り（user-id）、:col-nameでDBカラム名（user_id）を指定
+;;;
+;;; FK制約について:
+;;; - Mitoは :col-type に他のテーブルクラスを指定すると関係を認識する
+;;; - ただし、DBレベルのFK制約は自動生成されない
+;;; - DBレベルのFK制約はマイグレーションで追加する（scripts/add-fk-constraint.sql）
 
 (mito:deftable post ()
-  ((user-id :col-type :integer
-            :col-name "user_id"
-            :accessor post-user-id
-            :initarg :user-id)
+  ((user :col-type user
+         :col-name "user_id"
+         :accessor post-user
+         :initarg :user)
    (title :col-type (:varchar 200)
           :accessor post-title
           :initarg :title)
@@ -41,13 +51,21 @@
               :initarg :published
               :initform nil))
   (:table-name "post")
-  (:indexes (:user-id)))
+  (:indexes (:user)))
 
 ;;; ヘルパー関数
 
 (defun post-id (post)
   "投稿IDを取得"
   (mito:object-id post))
+
+(defun post-user-id (post)
+  "投稿の所有者ユーザーIDを取得
+   注: Mitoは :col-type に他のクラスを指定した場合、内部的に関連オブジェクトを保持する。
+       この関数でuser-idを取得するインターフェースを提供し、後方互換性を維持する。"
+  (let ((user-obj (post-user post)))
+    (when user-obj
+      (user-id user-obj))))
 
 (defun post-created-at (post)
   "作成日時を取得"
@@ -123,12 +141,23 @@
                                  (:raw "\"published\" = FALSE"))))))))
 
 (defun create-post (user-id title content &key (published nil))
-  "新規投稿を作成"
-  (mito:create-dao 'post
-                   :user-id user-id
-                   :title title
-                   :content content
-                   :published published))
+  "新規投稿を作成
+   user-id: ユーザーID（整数）またはuserオブジェクト
+
+   注: Mitoの :col-type user 定義により、:user キーワードには
+       userオブジェクトを渡す必要がある。整数IDが渡された場合は
+       DBからuserオブジェクトを取得してから渡す。"
+  (let ((user-obj (if (typep user-id 'user)
+                      user-id
+                      ;; IDの場合はuserオブジェクトを取得
+                      (voro.model.user:find-user-by-id user-id))))
+    (unless user-obj
+      (error "User not found for id: ~A" user-id))
+    (mito:create-dao 'post
+                     :user user-obj
+                     :title title
+                     :content content
+                     :published published)))
 
 ;;; JSON変換
 

@@ -201,3 +201,46 @@
               (user2 (create-test-user :username "user2")))
           (ok (/= (user-id user1) (user-id user2))
               "Different users have different IDs"))))))
+
+;;;
+;;; 追加: エッジケーステスト
+;;;
+
+(deftest test-create-user-empty-username
+  (with-test-environment
+    (with-test-db
+      (testing "空文字ユーザー名はModel層で許可される（バリデーションはUtil/Service層で実施）"
+        ;; 現状の仕様確認:
+        ;;   - Model層: DBアクセスの抽象化に専念
+        ;;   - 空文字バリデーション: Util層で実施予定
+        ;;   - PostgreSQLスキーマ: NOT NULL制約のみ（空文字は許可）
+        (let ((user (create-user "" "password123")))
+          (ok (not (null user))
+              "Empty username is allowed at Model layer")
+          (ok (string= "" (user-username user))
+              "Username is stored as empty string"))))))
+
+(deftest test-create-user-special-characters
+  (with-test-environment
+    (with-test-db
+      (testing "特殊文字を含むユーザー名（Model層では許可）"
+        ;; バリデーションはutil層で行う
+        ;; Model層は受け取った値をそのまま保存
+        (let ((user (create-user "user_123" "password123")))
+          (ok (not (null user))
+              "Username with underscore is allowed at model layer")))
+
+      (testing "日本語ユーザー名（Model層では許可）"
+        ;; Model層は文字エンコーディングが正しければ保存可能
+        (let ((user (create-user "テストユーザー" "password123")))
+          (ok (not (null user))
+              "Japanese username is stored at model layer"))))))
+
+(deftest test-verify-user-password-nil-user
+  (with-test-environment
+    (with-test-db
+      (testing "NILユーザーでパスワード検証 → エラー"
+        ;; verify-user-password は user-password を呼び出すため
+        ;; NILユーザーではエラーになる
+        (ok (signals (verify-user-password nil "password") 'error)
+            "NIL user signals an error")))))

@@ -30,6 +30,42 @@ make shell-test
 make logs
 ```
 
+### カバレッジ測定方法
+
+#### Docker環境（推奨）
+
+```bash
+# カバレッジ測定を実行
+make test-coverage
+
+# レポートを確認（ブラウザで開く）
+open coverage-report/cover-index.html
+```
+
+#### ローカル環境
+
+ローカル環境でカバレッジを測定する場合は、事前に環境を準備する必要があります。
+
+```bash
+# 1. PostgreSQL起動・テストDB作成
+createdb voro_test
+
+# 2. Redis起動
+redis-server
+
+# 3. 環境変数設定
+export APP_ENV=test
+export TEST_MODE=true
+
+# 4. カバレッジ測定
+make test-coverage-local
+
+# 5. レポートを確認
+open coverage-report/cover-index.html
+```
+
+**注意**: Docker環境を推奨します。ローカル環境では環境変数やDB/Redisの設定ミスにより、テストが正しく実行されない場合があります。
+
 ### テスト環境
 
 Voroのテストは、本番環境を汚染しないように**Docker環境専用**で実行されます。
