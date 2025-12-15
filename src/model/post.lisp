@@ -61,8 +61,8 @@
 
 (defun post-user-id (post)
   "投稿の所有者ユーザーIDを取得
-   注: Mitoは :col-type に他のクラスを指定した場合、
-       内部的に *-id スロットを作成するが、明示的に定義して安全性を確保"
+   注: Mitoは :col-type に他のクラスを指定した場合、内部的に関連オブジェクトを保持する。
+       この関数でuser-idを取得するインターフェースを提供し、後方互換性を維持する。"
   (let ((user-obj (post-user post)))
     (when user-obj
       (user-id user-obj))))
