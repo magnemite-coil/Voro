@@ -4,7 +4,9 @@
                 :validate-password
                 :validate-username
                 :validate-email
-                :validation-error)
+                :validation-error
+                :authorization-error
+                :not-found-error)
   (:import-from :voro.util.crypto
                 :hash-password
                 :verify-password)
@@ -185,6 +187,57 @@
            (corrupted-hash (concatenate 'string valid-hash "garbage")))
       (ok (null (verify-password "password" corrupted-hash))
           "Corrupted hash returns NIL"))))
+
+;;;
+;;; エラー型の:reportラムダをテスト
+;;; これらのテストは、エラーを文字列化して:reportラムダを実行させる
+;;;
+;;; 注: error-caught フラグでエラー発生を明示的に確認し、
+;;;     エラーが発生しない場合のサイレントパスを防止
+;;;
+
+(deftest test-validation-error-report
+  (testing "validation-errorの文字列表現"
+    (let ((error-caught nil))
+      (handler-case
+          (validate-password "short")  ;; 必ずエラーを発生させる
+        (validation-error (e)
+          (setf error-caught t)
+          ;; format "~A" が :report ラムダを呼び出す
+          (let ((error-string (format nil "~A" e)))
+            (ok (search "Validation error:" error-string)
+                "Error string contains 'Validation error:'")
+            (ok (search "8 characters" error-string)
+                "Error string contains the specific message"))))
+      (ok error-caught "validation-error should be signaled"))))
+
+(deftest test-authorization-error-report
+  (testing "authorization-errorの文字列表現"
+    (let ((error-caught nil))
+      (handler-case
+          (error 'authorization-error :message "Not authorized")
+        (authorization-error (e)
+          (setf error-caught t)
+          (let ((error-string (format nil "~A" e)))
+            (ok (search "Authorization error:" error-string)
+                "Error string contains 'Authorization error:'")
+            (ok (search "Not authorized" error-string)
+                "Error string contains the message"))))
+      (ok error-caught "authorization-error should be signaled"))))
+
+(deftest test-not-found-error-report
+  (testing "not-found-errorの文字列表現"
+    (let ((error-caught nil))
+      (handler-case
+          (error 'not-found-error :message "Resource not found")
+        (not-found-error (e)
+          (setf error-caught t)
+          (let ((error-string (format nil "~A" e)))
+            (ok (search "Not found:" error-string)
+                "Error string contains 'Not found:'")
+            (ok (search "Resource not found" error-string)
+                "Error string contains the message"))))
+      (ok error-caught "not-found-error should be signaled"))))
 
 ;;; JSON変換テスト
 
