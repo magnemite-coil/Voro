@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Test Coverage Expansion (util/validation.lisp error type :report lambda)
+
+#### Updated Test File
+- **test/util-test.lisp**: Added error type `:report` lambda tests (+51 lines)
+  - `test-validation-error-report`: Validate error string contains "Validation error:" prefix
+  - `test-authorization-error-report`: Validate error string contains "Authorization error:" prefix
+  - `test-not-found-error-report`: Validate error string contains "Not found:" prefix
+  - Uses `format nil "~A"` to invoke `:report` lambda on condition objects
+  - Added `authorization-error` and `not-found-error` to package imports
+
+#### Test Coverage Results
+| File | Expression Before | Expression After | Branch | Target | Status |
+|------|-------------------|------------------|--------|--------|--------|
+| util/validation.lisp | 88.2% (150/170) | 98.8% (168/170) | 100% (38/38) | 90% | ✅ Exceeded |
+
+#### Technical Notes
+- `:report` lambda in `define-condition` is invoked when condition is formatted to string
+- Expected +6 expressions covered, actual result was +18 expressions
+- Remaining 2 uncovered expressions are package definition (`defpackage`, `in-package`)
+
+#### Commits
+- Branch: `test/validation-coverage-improvement`
+- Commit: `b0868a9`
+- Design document: `docs/design/validation-test-coverage-design.md`
+
+---
+
 ### Added - Model Layer Test Coverage Expansion
 
 #### Coverage Results
