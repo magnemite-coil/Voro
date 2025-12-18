@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### New Test File
 - **frontend/src/pages/LoginPage/LoginPage.test.tsx**: Comprehensive unit tests for LoginPage
-  - 20 test cases (19 implemented, 1 todo)
+  - 20 test cases (18 implemented, 2 todo)
   - Phase 1: Initial Render (#1-3), Form Input (#4-7)
   - Phase 2: Login Success (#8-10)
   - Phase 3: Login Failure (#11-14), Error Recovery (#15)
@@ -38,8 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `POST /api/auth/logout`: Success response
 
 #### Test Results
-- 89 tests passed, 1 todo (network error test - MSW v2 limitation in jsdom)
-- Network error test marked as todo due to `HttpResponse.networkError()` incompatibility with Vitest + jsdom
+- 88 tests passed, 2 todo (network error tests - MSW v2 limitation in jsdom)
+- Network error tests (#14, #20) marked as todo due to `HttpResponse.networkError()` incompatibility with Vitest + jsdom
 
 #### Design Document
 - `docs/design/login-page-test-design.md`: Comprehensive test specification
