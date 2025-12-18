@@ -86,7 +86,7 @@ export function LoginPage() {
           type="submit"
           variant="primary"
           isLoading={isLoading}
-          disabled={!username || !password}
+          disabled={!username.trim() || !password.trim()}
         >
           ログイン
         </Button>
