@@ -274,6 +274,7 @@ describe('LoginPage - Login Success', () => {
     });
 
     // replace: true により履歴が置換されている
+    // NOTE: React Router v7 では historyIndex プロパティが存在しないため、historyAction のみで検証
     expect(router.state.historyAction).toBe('REPLACE');
     // リダイレクト先を確認
     expect(router.state.location.pathname).toBe('/posts/new');
@@ -301,6 +302,7 @@ describe('LoginPage - Login Success', () => {
     });
 
     // replace: true により履歴が置換されている
+    // NOTE: React Router v7 では historyIndex プロパティが存在しないため、historyAction のみで検証
     expect(router.state.historyAction).toBe('REPLACE');
     // リダイレクト先を確認
     expect(router.state.location.pathname).toBe('/posts/1/edit');
@@ -541,6 +543,7 @@ describe('LoginPage - Auto Redirect', () => {
     });
 
     // replace: true により履歴が置換されている
+    // NOTE: React Router v7 では historyIndex プロパティが存在しないため、historyAction のみで検証
     expect(router.state.historyAction).toBe('REPLACE');
     // リダイレクト先を確認
     expect(router.state.location.pathname).toBe('/posts/new');
