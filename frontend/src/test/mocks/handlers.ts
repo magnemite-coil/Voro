@@ -2,6 +2,31 @@
 import { http, HttpResponse } from 'msw';
 
 export const handlers = [
+  // ログイン（デフォルト: 成功）
+  http.post('/api/auth/login', async ({ request }) => {
+    const body = (await request.json()) as {
+      username: string;
+      password: string;
+    };
+    return HttpResponse.json({
+      success: true,
+      data: {
+        user: {
+          id: 1,
+          username: body.username,
+        },
+      },
+    });
+  }),
+
+  // ログアウト
+  http.post('/api/auth/logout', () => {
+    return HttpResponse.json({
+      success: true,
+      data: null,
+    });
+  }),
+
   // 認証検証（デフォルト: 認証済み）
   http.get('/api/me/posts', () => {
     return HttpResponse.json({

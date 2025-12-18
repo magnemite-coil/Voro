@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - LoginPage Test Coverage (Frontend)
+
+#### New Test File
+- **frontend/src/pages/LoginPage/LoginPage.test.tsx**: Comprehensive unit tests for LoginPage
+  - 20 test cases (18 implemented, 2 todo)
+  - Phase 1: Initial Render (#1-3), Form Input (#4-7)
+  - Phase 2: Login Success (#8-10)
+  - Phase 3: Login Failure (#11-14), Error Recovery (#15)
+  - Phase 4: Loading State (#16), Auto Redirect (#17), Auth State Verification (#18-20)
+
+#### Test Cases
+- **Initial Render**: Form elements, disabled button state, placeholders
+- **Form Input**: Username/password validation, whitespace-only input rejection
+- **Login Success**: Notification display, localStorage storage, redirect with history replacement
+- **Login Failure**: 400/401/500 error handling, localStorage side-effect verification
+- **Error Recovery**: Error clear after successful retry
+- **Loading State**: Spinner display, button disabled during submission
+- **Auto Redirect**: Authenticated user redirect with history replacement
+- **Auth State Verification**: 401 → logout, 500/network error → optimistic auth preservation
+
+#### Implementation Changes
+- **frontend/src/pages/LoginPage/LoginPage.tsx**: Enhanced disabled condition
+  - Changed: `disabled={!username || !password}`
+  - To: `disabled={!username.trim() || !password.trim()}`
+  - Prevents whitespace-only input from enabling login button
+
+- **frontend/src/test/mocks/handlers.ts**: Added auth handlers
+  - `POST /api/auth/login`: Default success response
+  - `POST /api/auth/logout`: Success response
+
+#### Test Results
+- 88 tests passed, 2 todo (network error tests - MSW v2 limitation in jsdom)
+- Network error tests (#14, #20) marked as todo due to `HttpResponse.networkError()` incompatibility with Vitest + jsdom
+
+#### Design Document
+- `docs/design/login-page-test-design.md`: Comprehensive test specification
+
+---
+
 ### Added - Test Coverage Expansion (util/validation.lisp error type :report lambda)
 
 #### Updated Test File
