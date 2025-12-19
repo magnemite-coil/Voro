@@ -53,8 +53,10 @@ function renderProtectedRoute(options: RenderOptions = {}) {
   // AuthContext の関数を露出するためのコンシューマーコンポーネント
   const AuthFunctionExposer = () => {
     const { login, logout } = useAuth();
+    /* eslint-disable react-hooks/globals -- テストヘルパー内での意図的な参照公開 */
     loginFn = login;
     logoutFn = logout;
+    /* eslint-enable react-hooks/globals */
     return null;
   };
 

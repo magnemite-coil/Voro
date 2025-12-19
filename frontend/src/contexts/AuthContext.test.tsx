@@ -42,10 +42,12 @@ function renderWithAuth() {
   const TestConsumer = () => {
     const auth = useAuth();
 
-    // 関数参照を外部に公開
+    // 関数参照を外部に公開（テスト用パターン）
+    /* eslint-disable react-hooks/globals -- テストヘルパー内での意図的な参照公開 */
     loginFn = auth.login;
     logoutFn = auth.logout;
     checkAuthFn = auth.checkAuth;
+    /* eslint-enable react-hooks/globals */
 
     return (
       <div>
