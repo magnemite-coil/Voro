@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - AuthContext & ProtectedRoute Test Coverage (Frontend)
+
+#### New Test Files
+- **frontend/src/contexts/AuthContext.test.tsx**: Comprehensive unit tests for AuthContext
+  - 23 test cases (22 implemented, 1 todo)
+  - Phase 1: Initial State (AC-1~AC-3a)
+  - Phase 2: localStorage & API Verification (AC-4~AC-10)
+  - Phase 3: Login Operations (AC-11~AC-14)
+  - Phase 4: Logout Operations (AC-15~AC-17)
+  - Phase 5: Abort & Network Error Handling (AC-18~AC-20)
+
+- **frontend/src/components/common/ProtectedRoute/ProtectedRoute.test.tsx**: Comprehensive unit tests for ProtectedRoute
+  - 8 test cases
+  - Phase 1: Loading State (PR-1~PR-2)
+  - Phase 2: Redirect when Unauthenticated (PR-3~PR-5)
+  - Phase 3: Authenticated Access (PR-6)
+  - Phase 4: Integration Tests (PR-7~PR-9)
+
+- **frontend/src/test/utils.ts**: Shared test utilities
+  - `setupAuthenticatedUser()`: Helper function for setting up authenticated user state in tests
+
+#### Implementation Changes (Phase 0 Bug Fixes)
+- **frontend/src/contexts/AuthContext.tsx**: Enhanced robustness
+  - Added `parseAuthData()` helper function for safe JSON parsing
+  - Added structure validation (userId: number, username: string)
+  - Fixed localStorage branch to reset to unauthenticated state
+  - Added `signal?.aborted` guards in all catch blocks to prevent memory leaks
+
+#### Test Cases Summary
+| Component | Test Cases | Status |
+|-----------|------------|--------|
+| AuthContext | AC-1~AC-20 (23 cases) | ✅ 22 implemented, 1 todo |
+| ProtectedRoute | PR-1~PR-9 (8 cases) | ✅ All implemented |
+| **Total** | **31 cases** | **30 implemented, 1 todo** |
+
+#### Shared Utility Migration (Phase 0.5)
+- Extracted `setupAuthenticatedUser()` from `LoginPage.test.tsx` to `test/utils.ts`
+- Updated imports in `LoginPage.test.tsx`, `AuthContext.test.tsx`, `ProtectedRoute.test.tsx`
+
+#### Test Results
+- 118 tests passed, 3 todo (121 total)
+- Frontend build successful
+- TypeScript type check passed
+- Backend tests passed (16 tests)
+
+#### Design Document
+- `docs/design/auth-context-test-design.md`: Comprehensive test specification with Phase 0~5 breakdown
+
+#### Commits
+- Branch: `test/auth-context-coverage`
+- Commit: `7905883`
+
+---
+
 ### Added - LoginPage Test Coverage (Frontend)
 
 #### New Test File
