@@ -19,6 +19,7 @@ import { NotificationProvider } from '../../contexts/NotificationContext';
 import { Toast } from '../../components/common/Toast/Toast';
 import { server } from '../../test/mocks/server';
 import { errorResponse } from '../../test/mocks/handlers';
+import { setupAuthenticatedUser } from '../../test/utils';
 
 // MSW ライフサイクル
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
@@ -41,14 +42,6 @@ interface RenderOptions {
   route?: string;
   initialEntries?: RouteEntry[];
   setupAuth?: boolean;
-}
-
-// 認証済みユーザーをセットアップ
-function setupAuthenticatedUser(userId: number = 1, username: string = 'testuser') {
-  localStorage.setItem(
-    'voro_auth',
-    JSON.stringify({ userId, username })
-  );
 }
 
 // テストヘルパー

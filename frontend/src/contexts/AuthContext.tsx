@@ -32,6 +32,30 @@ interface StoredAuthData {
   username: string;
 }
 
+/**
+ * localStorageのJSON文字列をパースし、構造検証を行う
+ * @param json localStorageから取得したJSON文字列
+ * @returns 有効なStoredAuthData、または無効な場合はnull
+ */
+function parseAuthData(json: string): StoredAuthData | null {
+  try {
+    const data: unknown = JSON.parse(json);
+    if (
+      typeof data === 'object' &&
+      data !== null &&
+      'userId' in data &&
+      'username' in data &&
+      typeof (data as StoredAuthData).userId === 'number' &&
+      typeof (data as StoredAuthData).username === 'string'
+    ) {
+      return data as StoredAuthData;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 interface LoginResponse {
   user: {
     id: number;
@@ -50,12 +74,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = useCallback(async (signal?: AbortSignal) => {
     const stored = localStorage.getItem(AUTH_STORAGE_KEY);
     if (!stored) {
-      setState((prev) => ({ ...prev, isLoading: false }));
+      // バグ#3修正: 既存stateを温存せず、未認証にリセット
+      setState({
+        isAuthenticated: false,
+        userId: null,
+        username: null,
+        isLoading: false,
+      });
+      return;
+    }
+
+    // バグ#1修正: JSON.parseを事前に実行し、結果を保持
+    const authData = parseAuthData(stored);
+    if (!authData) {
+      // 不正なJSON or 不完全な構造 → localStorageを削除して未認証状態に
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      setState({
+        isAuthenticated: false,
+        userId: null,
+        username: null,
+        isLoading: false,
+      });
       return;
     }
 
     try {
-      const authData: StoredAuthData = JSON.parse(stored);
       // TODO: /api/auth/me が実装されたらそちらに置き換える
       await api.get('/me/posts', { signal });
 
@@ -70,8 +113,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return;
 
-      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (!stored) {
+      // localStorage を再取得して削除されたかチェック
+      const currentStored = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (!currentStored) {
+        if (signal?.aborted) return;
         setState({
           isAuthenticated: false,
           userId: null,
@@ -81,7 +126,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const authData: StoredAuthData = JSON.parse(stored);
+      // 再取得したデータをパース（不正JSON or 不完全構造なら未認証）
+      const currentAuthData = parseAuthData(currentStored);
+      if (!currentAuthData) {
+        if (signal?.aborted) return;
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        setState({
+          isAuthenticated: false,
+          userId: null,
+          username: null,
+          isLoading: false,
+        });
+        return;
+      }
+
+      if (signal?.aborted) return;
 
       if (error instanceof ApiError) {
         if (error.statusCode === 401) {
@@ -97,8 +156,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error('Auth check failed with server error:', error.statusCode);
           setState({
             isAuthenticated: true,
-            userId: authData.userId,
-            username: authData.username,
+            userId: currentAuthData.userId,
+            username: currentAuthData.username,
             isLoading: false,
           });
         }
@@ -107,8 +166,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('Auth check failed with network error:', error);
         setState({
           isAuthenticated: true,
-          userId: authData.userId,
-          username: authData.username,
+          userId: currentAuthData.userId,
+          username: currentAuthData.username,
           isLoading: false,
         });
       }
