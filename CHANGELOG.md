@@ -7,6 +7,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - ConfirmModal Test Coverage (Frontend)
+
+#### New Test File
+- **frontend/src/components/common/ConfirmModal/ConfirmModal.test.tsx**: Comprehensive unit tests for ConfirmModal
+  - 21 test cases (all implemented)
+  - Phase 1: Basic Rendering (CM-1~CM-4)
+  - Phase 2: Button Actions (CM-5~CM-7, CM-7b)
+  - Phase 3: Keyboard Actions (CM-8~CM-11, CM-19)
+  - Phase 4: Overlay Actions (CM-12~CM-13)
+  - Phase 5: Scroll Lock (CM-14~CM-15, CM-20)
+  - Phase 6: Accessibility (CM-16~CM-18)
+
+#### Test Coverage Results
+| Metric | Before | After | Target | Status |
+|--------|--------|-------|--------|--------|
+| Statements | 24.71% | 100% | 95%+ | ✅ Exceeded |
+| Branch | 50% | 95.65% | 85-90% | ✅ Exceeded |
+| Functions | 33.33% | 100% | 100% | ✅ Achieved |
+| Lines | 24.71% | 100% | 95%+ | ✅ Exceeded |
+
+#### Test Cases Summary
+| Phase | Description | Count |
+|-------|-------------|-------|
+| Phase 1 | Basic Rendering (isOpen, labels) | 4 |
+| Phase 2 | Button Actions (confirm, cancel, focus) | 4 |
+| Phase 3 | Keyboard (Escape, Tab, focus trap) | 5 |
+| Phase 4 | Overlay (click, propagation) | 2 |
+| Phase 5 | Scroll Lock (apply, restore, no side effects) | 3 |
+| Phase 6 | Accessibility (ARIA attributes) | 3 |
+
+#### Bug Fix
+- **ConfirmModal.test.tsx**: Fixed TypeScript import for `ComponentProps`
+  - Changed: `import { ComponentProps }` → `import type { ComponentProps }`
+  - Required for `verbatimModuleSyntax` in TypeScript build
+
+#### Test Results
+- 139 tests passed, 3 todo (142 total)
+- Frontend build successful
+- TypeScript type check passed
+
+#### Design Document
+- `docs/design/confirm-modal-test-design.md`: Comprehensive test specification with Phase 1~6 breakdown
+
+#### Commits
+- Branch: `test/confirm-modal-coverage`
+- Commits: `14eae08`, `0545eb0`, `a660c2c`
+
+---
+
+### Added - Vitest Coverage Tooling
+
+#### Package Updates
+- **frontend/package.json**: Added coverage tooling
+  - New script: `test:coverage` for generating coverage reports
+  - New devDependency: `@vitest/coverage-v8`
+
+#### Configuration
+- **.gitignore**: Added `frontend/coverage/` to excluded files
+
+#### Usage
+```bash
+npm run test:coverage -- --run  # Generate coverage report
+```
+
+#### Commits
+- `0545eb0` chore(test): add vitest coverage tooling
+
+---
+
 ### Added - AuthContext & ProtectedRoute Test Coverage (Frontend)
 
 #### New Test Files
