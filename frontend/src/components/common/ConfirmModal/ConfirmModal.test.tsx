@@ -1,5 +1,5 @@
 // components/common/ConfirmModal/ConfirmModal.test.tsx
-import { ComponentProps } from 'react';
+import type { ComponentProps } from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
