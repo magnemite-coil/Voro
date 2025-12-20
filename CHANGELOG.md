@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - NotificationContext Test Coverage (Frontend)
+
+#### New Test File
+- **frontend/src/contexts/NotificationContext.test.tsx**: Comprehensive unit tests for NotificationContext
+  - 21 test cases (all implemented)
+  - Phase 1: Initial State & useNotification Hook (NC-1~NC-3A)
+  - Phase 2: showNotification - Add Notifications (NC-4~NC-8)
+  - Phase 3: removeNotification - Remove Notifications (NC-9~NC-12)
+  - Phase 4: Auto-dismiss Timer (NC-13~NC-17)
+  - Phase 5: Cleanup (NC-18~NC-19)
+
+#### Test Coverage Results
+| Metric | Result | Target | Status |
+|--------|--------|--------|--------|
+| Statements | 100% | 100% | ✅ Achieved |
+| Branch | 100% | 100% | ✅ Achieved |
+| Functions | 100% | 100% | ✅ Achieved |
+| Lines | 100% | 100% | ✅ Achieved |
+
+#### Test Cases Summary
+| Phase | Description | Count |
+|-------|-------------|-------|
+| Phase 1 | Initial State, useNotification Hook | 4 |
+| Phase 2 | showNotification - Add Notifications | 5 |
+| Phase 3 | removeNotification - Remove Notifications | 4 |
+| Phase 4 | Auto-dismiss Timer (3 seconds) | 6 |
+| Phase 5 | Cleanup on Unmount | 2 |
+
+#### Key Test Scenarios
+- Provider boundary error handling (throws when used outside provider)
+- useCallback function reference stability across re-renders
+- Multiple notifications with individual timers
+- Timer cleanup on manual removal
+- Full timer cleanup on unmount
+- Auto-dismiss after 3 seconds
+
+#### ESLint Configuration
+- Added `eslint-disable react-hooks/globals` directive
+  - Required for test pattern where external variables capture hook values
+  - Standard practice for React testing with hook value inspection
+
+#### Test Results
+- 163 tests passed, 3 todo (166 total)
+- Frontend build successful
+- Backend tests passed (16 tests)
+
+#### Design Document
+- `docs/design/notification-context-test-design.md`: Comprehensive test specification with Phase 1~5 breakdown (v13 - Implementation Complete)
+
+#### Commits
+- Branch: `test/notification-context-coverage`
+- Commits: `95967b5`, `e361d40`
+
+---
+
 ### Added - ConfirmModal Test Coverage (Frontend)
 
 #### New Test File
