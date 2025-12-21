@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - PostEditorPage Test Coverage (Frontend)
+
+#### Updated Test File
+- **frontend/src/pages/PostEditorPage/PostEditorPage.test.tsx**: Expanded PostEditorPage tests (+11 test cases)
+  - Phase 1: Invalid ID Handling (PE-INV-1/2), Navigation (PE-NAV-1/2), Confirmation Modal (PE-CONF-1/2/3)
+  - Phase 2: Publish Error Handling (PE-PUB-1/2/3)
+  - Phase 3: Draft Save Error Handling (PE-SAVE-1)
+  - Total: 21 test cases (10 existing + 11 new)
+
+#### Test Helper Functions
+- `renderEditMode`: Helper for rendering in edit mode with customizable post data
+- `renderCreateMode`: Helper for rendering in create mode
+- `makeFormDirty`: Helper for setting up form dirty state
+
+#### Test Coverage Results
+| Metric | Before | After | Target | Status |
+|--------|--------|-------|--------|--------|
+| Statements | 85.65% | 100% | 95%+ | Exceeded |
+| Branch | 86.27% | 98.38% | 95%+ | Achieved |
+| Functions | 60% | 60% | 80%+ | Tolerated (v8 coverage characteristics) |
+| Lines | 85.65% | 100% | 95%+ | Exceeded |
+
+#### Code Quality Improvements
+- **PostEditorPage.tsx**: Removed unreachable code
+  - Deleted `mode === 'create'` branch from `handlePublish` function
+  - This code path was unreachable because publish button is always disabled in create mode
+
+#### Test Cases Summary
+| Phase | Test IDs | Description | Lines Covered |
+|-------|----------|-------------|---------------|
+| 1 | PE-INV-1/2 | Invalid ID redirect | 43 |
+| 1 | PE-NAV-1/2 | New post navigation | 182 |
+| 1 | PE-CONF-1/2/3 | Confirmation modal operations | 186-200 |
+| 2 | PE-PUB-1/2/3 | Publish error handling | 167-171 |
+| 3 | PE-SAVE-1 | Draft save error handling | 140-141 |
+
+#### Commits
+- Branch: `test/post-editor-page-coverage`
+- Commits: `7bb590a`, `46f5e22`, `490e939`
+- Design document: `docs/design/post-editor-page-test-coverage.md`
+
+---
+
 ### Added - NotificationContext Test Coverage (Frontend)
 
 #### New Test File
