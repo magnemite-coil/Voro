@@ -1029,3 +1029,36 @@ describe('PostEditorPage - Publish Error Handling', () => {
     });
   });
 });
+
+// ===================================================================
+// Draft Save Error Handling テスト（140-141行目カバー）
+// ===================================================================
+describe('PostEditorPage - Draft Save Error Handling', () => {
+  it('should show generic error when draft save throws non-ApiError (PE-SAVE-1)', async () => {
+    // Arrange: 新規作成モードでセットアップ、ネットワークエラーをシミュレート
+    server.use(
+      http.post('/api/posts', () => {
+        // ネットワークエラーをシミュレート（ApiError以外のエラー）
+        return HttpResponse.error();
+      })
+    );
+
+    renderCreateMode();
+
+    // フォームの読み込みを待機
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('記事のタイトル')).toBeInTheDocument();
+    });
+
+    // フォームに入力して isDirty=true にする
+    await makeFormDirty({ title: 'Test Title', content: 'Test content' });
+
+    // Act: 下書き保存ボタンをクリック
+    await userEvent.click(screen.getByText('下書き保存'));
+
+    // Assert: 汎用エラー通知が表示される（140-141行がカバーされる）
+    await waitFor(() => {
+      expect(screen.getByText('保存に失敗しました')).toBeInTheDocument();
+    });
+  });
+});
