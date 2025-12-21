@@ -144,7 +144,7 @@ export function PostEditorPage({ mode }: PostEditorPageProps) {
     }
   };
 
-  // 公開
+  // 公開（編集モード専用 - 新規作成モードでは公開ボタンがdisabled）
   const handlePublish = async () => {
     const result = validatePost(title, content);
     if (!result.isValid) {
@@ -154,15 +154,9 @@ export function PostEditorPage({ mode }: PostEditorPageProps) {
 
     setIsSubmitting(true);
     try {
-      if (mode === 'create') {
-        const createdPost = await createPost({ title, content, published: true });
-        showNotification('success', '記事を公開しました');
-        navigate(`/posts/${createdPost.id}/edit`, { replace: true });
-      } else {
-        await updatePost({ title, content, published: true });
-        showNotification('success', '記事を公開しました');
-        setOriginalPost({ ...originalPost!, title, content, published: true });
-      }
+      await updatePost({ title, content, published: true });
+      showNotification('success', '記事を公開しました');
+      setOriginalPost({ ...originalPost!, title, content, published: true });
     } catch (e) {
       if (e instanceof ApiError) {
         showNotification('error', formatErrorMessage(e));

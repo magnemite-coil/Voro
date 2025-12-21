@@ -820,3 +820,212 @@ describe('PostEditorPage - New Post Confirmation Modal', () => {
     expect(screen.getByPlaceholderText('記事のタイトル')).toHaveValue(testTitle);
   });
 });
+
+// ===================================================================
+// Publish Error Handling テスト（167-171行目カバー）
+// ===================================================================
+describe('PostEditorPage - Publish Error Handling', () => {
+  it('should show error notification when publish API fails (PE-PUB-1)', async () => {
+    // Arrange: 編集モードで下書き状態の投稿をセットアップ
+    server.use(
+      http.get('/api/posts/1', () => {
+        return HttpResponse.json({
+          success: true,
+          data: {
+            post: {
+              id: 1,
+              user_id: 1,
+              title: 'Draft Post',
+              content: 'Draft content',
+              published: false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          },
+        });
+      }),
+      http.put('/api/posts/1', () => {
+        return HttpResponse.json(
+          { success: false, error: 'Internal server error', error_id: 'test-456' },
+          { status: 500 }
+        );
+      })
+    );
+
+    // renderEditMode は skipApiMock=true で使用し、上記のモックを優先
+    localStorage.setItem(
+      'voro_auth',
+      JSON.stringify({ userId: 1, username: 'testuser' })
+    );
+
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/posts/:id/edit',
+          element: <PostEditorPage mode="edit" />,
+        },
+      ],
+      { initialEntries: ['/posts/1/edit'] }
+    );
+
+    render(
+      <AuthProvider>
+        <NotificationProvider>
+          <RouterProvider router={router} />
+          <Toast />
+        </NotificationProvider>
+      </AuthProvider>
+    );
+
+    // フォームの読み込みを待機
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Draft Post')).toBeInTheDocument();
+    });
+
+    // 下書き状態で変更なしなら公開ボタンがアクティブ
+    await waitFor(() => {
+      expect(screen.getByText('公開する')).not.toBeDisabled();
+    });
+
+    // Act: 公開ボタンをクリック
+    await userEvent.click(screen.getByText('公開する'));
+
+    // Assert: エラー通知が表示される
+    await waitFor(() => {
+      expect(screen.getByText(/サーバーエラーが発生しました/)).toBeInTheDocument();
+    });
+  });
+
+  it('should show validation error when publishing with invalid server data (PE-PUB-2)', async () => {
+    // Arrange: サーバーから不正なデータ（空白タイトル）が返される特殊ケース
+    // この場合、isDirty=false でも公開ボタンはクリック可能だが、バリデーションエラーになる
+    server.use(
+      http.get('/api/posts/1', () => {
+        return HttpResponse.json({
+          success: true,
+          data: {
+            post: {
+              id: 1,
+              user_id: 1,
+              title: '   ',  // 空白のみ（不正なデータ）
+              content: 'Valid content',
+              published: false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          },
+        });
+      })
+    );
+
+    localStorage.setItem(
+      'voro_auth',
+      JSON.stringify({ userId: 1, username: 'testuser' })
+    );
+
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/posts/:id/edit',
+          element: <PostEditorPage mode="edit" />,
+        },
+      ],
+      { initialEntries: ['/posts/1/edit'] }
+    );
+
+    render(
+      <AuthProvider>
+        <NotificationProvider>
+          <RouterProvider router={router} />
+          <Toast />
+        </NotificationProvider>
+      </AuthProvider>
+    );
+
+    // フォームの読み込みを待機（空白タイトルがセットされる）
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('記事のタイトル')).toHaveValue('   ');
+    });
+
+    // isDirty=false なので公開ボタンはアクティブ
+    await waitFor(() => {
+      expect(screen.getByText('公開する')).not.toBeDisabled();
+    });
+
+    // Act: 公開ボタンをクリック
+    await userEvent.click(screen.getByText('公開する'));
+
+    // Assert: バリデーションエラーが表示される
+    await waitFor(() => {
+      expect(screen.getByText('Title cannot be empty or whitespace only')).toBeInTheDocument();
+    });
+  });
+
+  it('should show generic error when publish throws non-ApiError (PE-PUB-3)', async () => {
+    // Arrange: 編集モードで下書き状態の投稿をセットアップ
+    server.use(
+      http.get('/api/posts/1', () => {
+        return HttpResponse.json({
+          success: true,
+          data: {
+            post: {
+              id: 1,
+              user_id: 1,
+              title: 'Draft Post',
+              content: 'Draft content',
+              published: false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          },
+        });
+      }),
+      http.put('/api/posts/1', () => {
+        // ネットワークエラーをシミュレート（ApiError以外のエラー）
+        return HttpResponse.error();
+      })
+    );
+
+    localStorage.setItem(
+      'voro_auth',
+      JSON.stringify({ userId: 1, username: 'testuser' })
+    );
+
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/posts/:id/edit',
+          element: <PostEditorPage mode="edit" />,
+        },
+      ],
+      { initialEntries: ['/posts/1/edit'] }
+    );
+
+    render(
+      <AuthProvider>
+        <NotificationProvider>
+          <RouterProvider router={router} />
+          <Toast />
+        </NotificationProvider>
+      </AuthProvider>
+    );
+
+    // フォームの読み込みを待機
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Draft Post')).toBeInTheDocument();
+    });
+
+    // 下書き状態で変更なしなら公開ボタンがアクティブ
+    await waitFor(() => {
+      expect(screen.getByText('公開する')).not.toBeDisabled();
+    });
+
+    // Act: 公開ボタンをクリック
+    await userEvent.click(screen.getByText('公開する'));
+
+    // Assert: 汎用エラー通知が表示される
+    await waitFor(() => {
+      expect(screen.getByText('公開に失敗しました')).toBeInTheDocument();
+    });
+  });
+});
