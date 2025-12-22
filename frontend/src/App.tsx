@@ -7,7 +7,7 @@ import { LoginPage } from './pages/LoginPage/LoginPage';
 import { PostEditorPage } from './pages/PostEditorPage/PostEditorPage';
 import { ProtectedRoute } from './components/common/ProtectedRoute/ProtectedRoute';
 
-function NotFoundPage() {
+export function NotFoundPage() {
   return (
     <div style={{ textAlign: 'center', padding: '40px' }}>
       <h1 style={{ color: 'var(--neon-pink)' }}>404</h1>
