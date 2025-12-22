@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - useNavigationBlocker Test Coverage (Frontend)
+
+#### New Test File
+- **frontend/src/hooks/useNavigationBlocker.test.tsx**: Comprehensive unit tests for useNavigationBlocker hook
+  - 11 test cases (all implemented)
+  - Phase 1: Initial State (NB-1~NB-2)
+  - Phase 2: Blocking Behavior (NB-3~NB-5)
+  - Phase 3: proceed() and reset() (NB-6~NB-9)
+  - Phase 4: Edge Cases (NB-10~NB-11)
+
+#### Test Coverage Results
+| Metric | Result | Target | Status |
+|--------|--------|--------|--------|
+| Statements | 100% | 100% | ✅ Achieved |
+| Branch | 100% | 100% | ✅ Achieved |
+| Functions | 100% | 100% | ✅ Achieved |
+| Lines | 100% | 100% | ✅ Achieved |
+
+#### Test Helper Components
+- `TestComponent`: Static isDirty/skipBlock props for basic tests
+- `StateToggleComponent`: Internal state management for dynamic state change tests
+- `renderWithRouter`: Helper for static prop tests (NB-1~NB-3, NB-6~NB-9)
+- `renderWithStateToggle`: Helper for state change tests (NB-4, NB-5, NB-10, NB-11)
+
+#### Key Test Scenarios
+- Navigation blocking when isDirty is true
+- Skip blocking when skipBlock is true
+- proceed() continues blocked navigation
+- reset() cancels blocked navigation
+- Safe no-op when calling proceed()/reset() while not blocked
+- Function stability after state changes (re-render safety)
+- Blocked state maintained when skipBlock changes mid-block
+
+#### Technical Notes
+- Uses React Router v7 Data Router API (`createMemoryRouter`, `RouterProvider`)
+- Tests actual navigation behavior, not mock implementations
+- Validates `useBlocker` hook integration with proper routing context
+
+#### Test Results
+- 182 tests passed, 3 todo (185 total)
+- Frontend build successful
+- TypeScript type check passed
+
+#### Design Document
+- `docs/design/use-navigation-blocker-test-design.md`: Implementation complete with 100% coverage
+
+#### Commits
+- Branch: `test/use-navigation-blocker-coverage`
+- Commit: `a8e5b71`
+
+---
+
 ### Added - PostEditorPage Test Coverage (Frontend)
 
 #### Updated Test File
