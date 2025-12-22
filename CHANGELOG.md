@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - AuthContext Edge Case Test Coverage (Frontend)
+
+#### Updated Test File
+- **frontend/src/contexts/AuthContext.test.tsx**: Added edge case tests for 100% coverage (+3 test cases)
+  - AC-9b: localStorage corrupted to invalid JSON during API call
+  - AC-9c: localStorage structure becomes incomplete during API call
+  - AC-18c: localStorage corruption + unmount abort handling
+
+#### Test Coverage Results
+| Metric | Before | After | Target | Status |
+|--------|--------|-------|--------|--------|
+| Statements | 93.97% | 100% | 100% | ✅ Achieved |
+| Branch | 93.18% | 100% | 100% | ✅ Achieved |
+| Functions | 100% | 100% | 100% | ✅ Achieved |
+| Lines | 100% | 100% | 100% | ✅ Achieved |
+
+#### Test Cases Summary
+| Test ID | Target Line | Description |
+|---------|-------------|-------------|
+| AC-9b | 131 | Clears auth when localStorage is corrupted to invalid JSON during API call |
+| AC-9c | 131 | Clears auth when localStorage structure becomes incomplete during API call |
+| AC-18c | 132 | Does not update state when unmounted after localStorage corruption |
+
+#### Key Test Scenarios
+- Simulates cross-tab localStorage manipulation (corruption by browser extensions or other tabs)
+- Invalid JSON corruption (`'invalid-json{'`) triggers auth state clear
+- Incomplete structure (`{ userId: 1 }` without username) triggers auth state clear
+- AbortSignal early return on unmount prevents memory leaks and state updates
+
+#### Technical Notes
+- AC-9b/AC-9c: Uses MSW (`server.use`) to modify localStorage before API response
+- AC-18c: Uses `vi.spyOn(api, 'get')` for AbortSignal access and corruption simulation
+- Console.error suppression only required for AC-18c (mock throws error)
+
+#### Test Results
+- 187 tests passed, 3 todo (190 total)
+- TypeScript type check passed
+- ESLint: no warnings
+- Frontend build successful
+
+#### Design Document
+- `docs/design/authcontext-edge-cases-test.md`: Implementation complete with 100% coverage
+
+#### Commits
+- Branch: `test/authcontext-edge-cases-2025-12-22`
+- Commit: `9a3623c`
+
+---
+
 ### Added - useNavigationBlocker Test Coverage (Frontend)
 
 #### New Test File
