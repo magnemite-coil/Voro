@@ -325,6 +325,62 @@ describe('AuthContext - checkAuth and localStorage Restoration', () => {
     expect(screen.getByTestId('isAuthenticated')).toHaveTextContent('false');
   });
 
+  // AC-9b: API呼び出し中にlocalStorageが不正JSONに改ざんされた場合 → 未認証
+  it('clears auth when localStorage is corrupted to invalid JSON during API call (AC-9b)', async () => {
+    // Arrange
+    setupAuthenticatedUser(1, 'testuser');
+
+    server.use(
+      http.get('/api/me/posts', async () => {
+        // APIレスポンスを返す前にlocalStorageを不正JSONに改ざん
+        // （別タブでの操作やブラウザ拡張機能によるデータ破損をシミュレート）
+        localStorage.setItem('voro_auth', 'invalid-json{');
+        return errorResponse.serverError();
+      })
+    );
+
+    // Act
+    renderWithAuth();
+
+    // Assert
+    await waitFor(() => {
+      expect(screen.getByTestId('isLoading')).toHaveTextContent('false');
+    });
+
+    expect(screen.getByTestId('isAuthenticated')).toHaveTextContent('false');
+    expect(screen.getByTestId('userId')).toHaveTextContent('null');
+    expect(screen.getByTestId('username')).toHaveTextContent('null');
+    expect(localStorage.getItem('voro_auth')).toBeNull();
+  });
+
+  // AC-9c: API呼び出し中にlocalStorageが不完全な構造に改ざんされた場合 → 未認証
+  it('clears auth when localStorage structure becomes incomplete during API call (AC-9c)', async () => {
+    // Arrange
+    setupAuthenticatedUser(1, 'testuser');
+
+    server.use(
+      http.get('/api/me/posts', async () => {
+        // 不完全な構造に改ざん（usernameなし）
+        // （別タブでの部分的なログイン処理によるデータ競合をシミュレート）
+        localStorage.setItem('voro_auth', JSON.stringify({ userId: 1 }));
+        return errorResponse.serverError();
+      })
+    );
+
+    // Act
+    renderWithAuth();
+
+    // Assert
+    await waitFor(() => {
+      expect(screen.getByTestId('isLoading')).toHaveTextContent('false');
+    });
+
+    expect(screen.getByTestId('isAuthenticated')).toHaveTextContent('false');
+    expect(screen.getByTestId('userId')).toHaveTextContent('null');
+    expect(screen.getByTestId('username')).toHaveTextContent('null');
+    expect(localStorage.getItem('voro_auth')).toBeNull();
+  });
+
   // AC-10a: localStorage の構造が不完全（userIdのみ）→ 未認証
   it('clears auth when localStorage structure is incomplete (userId only) (AC-10)', async () => {
     // Arrange: userIdのみ（usernameなし）
@@ -650,6 +706,107 @@ describe('AuthContext - Edge Cases', () => {
     expect(localStorage.getItem('voro_auth')).toBe(originalLocalStorage);
 
     // クリーンアップ
+    consoleSpy.mockRestore();
+    vi.restoreAllMocks();
+  });
+
+  // AC-18d: AbortError が発生した場合 → 早期リターン（114行カバー）
+  it('ignores AbortError when request is cancelled (AC-18d)', async () => {
+    // Arrange
+    setupAuthenticatedUser(1, 'testuser');
+    const originalLocalStorage = localStorage.getItem('voro_auth');
+
+    // AbortError をスロー（fetch が abort された時の動作をシミュレート）
+    vi.spyOn(api, 'get').mockImplementation(async () => {
+      // カスタム Error オブジェクトで AbortError をシミュレート
+      const abortError = new Error('The operation was aborted');
+      abortError.name = 'AbortError';
+      throw abortError;
+    });
+
+    // Act
+    renderWithAuth();
+
+    // Assert: 処理が完了するまで少し待機
+    await new Promise((r) => setTimeout(r, 50));
+
+    // Assert: localStorage が変化していない（AbortError で早期リターン）
+    expect(localStorage.getItem('voro_auth')).toBe(originalLocalStorage);
+
+    // クリーンアップ
+    vi.restoreAllMocks();
+  });
+
+  // AC-18e: localStorage削除＋unmount時のabort処理（119行カバー）
+  it('does not update state when unmounted after localStorage deletion (AC-18e)', async () => {
+    // Arrange
+    setupAuthenticatedUser(1, 'testuser');
+
+    let signalRef: AbortSignal | undefined;
+    vi.spyOn(api, 'get').mockImplementation(async (_url, options) => {
+      signalRef = options?.signal;
+      // API呼び出し中にlocalStorageを削除（別タブでのログアウトをシミュレート）
+      localStorage.removeItem('voro_auth');
+      // 50ms: unmount()が呼ばれる前にモック内の処理が開始されるのに十分な時間
+      await new Promise((r) => setTimeout(r, 50));
+      throw new ApiError('Server Error', undefined, 500);
+    });
+
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { unmount } = renderWithAuth();
+
+    // 即座にアンマウント（checkAuth内のAPI呼び出し中にabortをトリガー）
+    unmount();
+
+    // 100ms: モック内の50ms遅延 + バッファ
+    await new Promise((r) => setTimeout(r, 100));
+
+    // Assert: abortされている
+    expect(signalRef?.aborted).toBe(true);
+
+    // Assert: localStorageは削除された状態のまま
+    // → 119行の `if (signal?.aborted) return;` が実行された証拠
+    expect(localStorage.getItem('voro_auth')).toBeNull();
+
+    consoleSpy.mockRestore();
+    vi.restoreAllMocks();
+  });
+
+  // AC-18c: localStorage改ざん＋unmount時のabort処理
+  it('does not update state when unmounted after localStorage corruption (AC-18c)', async () => {
+    // Arrange
+    setupAuthenticatedUser(1, 'testuser');
+
+    let signalRef: AbortSignal | undefined;
+    vi.spyOn(api, 'get').mockImplementation(async (_url, options) => {
+      signalRef = options?.signal;
+      // localStorage を不正値に改ざん
+      localStorage.setItem('voro_auth', 'corrupted');
+      // 50ms: unmount()が呼ばれる前にモック内の処理が開始されるのに十分な時間
+      // この遅延中にunmount()が呼ばれ、AbortControllerがabortされる
+      await new Promise((r) => setTimeout(r, 50));
+      throw new ApiError('Server Error', undefined, 500);
+    });
+
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { unmount } = renderWithAuth();
+
+    // 即座にアンマウント（checkAuth内のAPI呼び出し中にabortをトリガー）
+    unmount();
+
+    // 100ms: モック内の50ms遅延 + バッファ（API処理の完了を確実に待つ）
+    // ※ AC-18/AC-18bと同じパターン
+    await new Promise((r) => setTimeout(r, 100));
+
+    // Assert: abortされている
+    expect(signalRef?.aborted).toBe(true);
+
+    // Assert: localStorageは改ざんされた状態のまま（removeが呼ばれていない）
+    // → 132行の `if (signal?.aborted) return;` が実行された証拠
+    expect(localStorage.getItem('voro_auth')).toBe('corrupted');
+
     consoleSpy.mockRestore();
     vi.restoreAllMocks();
   });
