@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Frontend Coverage Improvement Option A (Header, Toast, App, api.ts)
+
+#### New Test Files
+- **frontend/src/components/common/Header/Header.test.tsx**: Header component tests (129 lines)
+  - HD-1~HD-7: Logo, navigation, active tab styling, actions, click handlers
+  - CSS Modules compatible assertions
+- **frontend/src/components/common/Toast/Toast.test.tsx**: Toast component tests (168 lines)
+  - TO-1~TO-5: Empty state, notifications, close button, multiple notifications, notification types
+  - NotificationContext integration testing
+
+#### Updated Test Files
+- **frontend/src/App.test.tsx**: Added APP-7 direct mount test
+  - Tests App component mounting with createBrowserRouter
+  - Verifies redirect flow from / → /posts/new → /login (unauthenticated)
+- **frontend/src/services/api.test.ts**: Added AbortSignal support tests
+  - api.post, api.put, api.delete now tested with AbortController
+  - Branch coverage improved: 82.35% → 100%
+- **frontend/src/components/common/ProtectedRoute/ProtectedRoute.test.tsx**: Fixed act() warnings
+  - PR-7, PR-8: login(), logout(), router.navigate() wrapped in act()
+
+#### Test Coverage Results
+| Metric | Target | Achieved | Status |
+|--------|--------|----------|--------|
+| Functions | 90%+ | 93.33% | ✅ Achieved |
+| Branch | 98%+ | 98.88% | ✅ Achieved |
+| Lines | 99%+ | 99.5% | ✅ Achieved |
+
+#### Test Cases Summary
+| File | Test IDs | Count | Status |
+|------|----------|-------|--------|
+| Header.test.tsx | HD-1~HD-7 | 7 | ✅ |
+| Toast.test.tsx | TO-1~TO-5 | 5 | ✅ |
+| App.test.tsx | APP-7 | 1 | ✅ |
+| api.test.ts | AbortSignal tests | 3 | ✅ |
+
+#### Test Results
+- 212 tests passed, 3 todo (215 total)
+- TypeScript type check passed
+- ESLint: no warnings
+- Frontend build successful
+
+#### Design Document
+- `docs/design/frontend-coverage-improvement-option-a.md`: All tasks completed (v1.6)
+
+#### Branch
+- `test/frontend-coverage-option-a-2025-12-23`
+
+---
+
 ### Added - usePost Non-API Error Handling Test Coverage (Frontend)
 
 #### Updated Test File
