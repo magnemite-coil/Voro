@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - usePost Non-API Error Handling Test Coverage (Frontend)
+
+#### Updated Test File
+- **frontend/src/hooks/usePost.test.ts**: Added non-API error handling tests for 100% coverage (+2 test cases)
+  - Network error test for `fetchPost` using `HttpResponse.error()`
+  - Non-403 API error test for `updatePost` (500 Internal Server Error)
+
+#### Test Coverage Results
+| Metric | Before | After | Target | Status |
+|--------|--------|-------|--------|--------|
+| Statements | 97.05% | 100% | 100% | ✅ Achieved |
+| Branch | 94.11% | 100% | 100% | ✅ Achieved |
+| Functions | 100% | 100% | 100% | ✅ Achieved |
+| Lines | 97.05% | 100% | 100% | ✅ Achieved |
+
+#### Test Cases Summary
+| Test Name | Target Lines | Description |
+|-----------|--------------|-------------|
+| `should set error to "Failed to load post" on network error` | 42-43 | Simulates network error via `HttpResponse.error()`, verifies error message |
+| `should re-throw error on non-403 API error` | 75-76 | Simulates 500 error, verifies error is re-thrown |
+
+#### Key Test Scenarios
+- MSW `HttpResponse.error()` simulates network-level errors (TypeError, not ApiError)
+- Non-ApiError errors trigger generic "Failed to load post" message in `fetchPost`
+- Non-403 errors in `updatePost` are re-thrown to caller
+
+#### Test Results
+- 196 tests passed, 3 todo (199 total)
+- TypeScript type check passed
+- Frontend build successful
+
+#### Design Document
+- `docs/design/usepost-non-api-error-test.md`: Implementation complete with results section
+
+#### Commits
+- Branch: `test/usepost-non-api-error-2025-12-23`
+- Commit: `4a41efc`
+
+---
+
 ### Added - App.tsx Routing Test Coverage (Frontend)
 
 #### New Test File

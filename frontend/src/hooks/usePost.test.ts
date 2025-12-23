@@ -116,6 +116,24 @@ describe('usePost - fetchPost', () => {
 
     expect(result.current.error).toBe('Forbidden');
   });
+
+  it('should set error to "Failed to load post" on network error', async () => {
+    // Simulate network-level error (TypeError, not ApiError)
+    server.use(
+      http.get('/api/posts/1', () => {
+        return HttpResponse.error();
+      })
+    );
+
+    const { result } = renderHook(() => usePost({ postId: 1 }));
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.post).toBeNull();
+    expect(result.current.error).toBe('Failed to load post');
+  });
 });
 
 describe('usePost - createPost', () => {
@@ -291,6 +309,51 @@ describe('usePost - updatePost', () => {
 
     expect(thrownError).not.toBeNull();
     expect(thrownError?.message).toBe('Post ID is required for update');
+  });
+
+  it('should re-throw error on non-403 API error', async () => {
+    server.use(
+      http.get('/api/posts/1', () => {
+        return HttpResponse.json({
+          success: true,
+          data: {
+            post: {
+              id: 1,
+              user_id: 1,
+              title: 'Test',
+              content: 'Content',
+              published: false,
+              created_at: '2025-01-01T00:00:00Z',
+              updated_at: '2025-01-01T00:00:00Z',
+            },
+          },
+        });
+      }),
+      http.put('/api/posts/1', () => {
+        return HttpResponse.json(
+          { success: false, error: 'Internal Server Error' },
+          { status: 500 }
+        );
+      })
+    );
+
+    const { result } = renderHook(() => usePost({ postId: 1 }));
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    let thrownError: Error | null = null;
+    try {
+      await act(async () => {
+        await result.current.updatePost({ title: 'Updated' });
+      });
+    } catch (e) {
+      thrownError = e as Error;
+    }
+
+    expect(thrownError).not.toBeNull();
+    expect(thrownError?.message).toBe('Internal Server Error');
   });
 });
 
