@@ -1,5 +1,5 @@
 // components/common/ProtectedRoute/ProtectedRoute.test.tsx
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import {
   describe,
   it,
@@ -217,11 +217,15 @@ describe('ProtectedRoute - Integration Tests', () => {
       expect(router.state.location.pathname).toBe('/login');
     });
 
-    // ログイン実行
-    await login('testuser', 'password123');
+    // ログイン実行（状態更新を act() でラップ）
+    await act(async () => {
+      await login('testuser', 'password123');
+    });
 
-    // 保護ルートへ遷移
-    await router.navigate('/protected');
+    // 保護ルートへ遷移（状態更新を act() でラップ）
+    await act(async () => {
+      await router.navigate('/protected');
+    });
 
     await waitFor(() => {
       expect(screen.getByTestId('protected-content')).toBeInTheDocument();
@@ -240,8 +244,10 @@ describe('ProtectedRoute - Integration Tests', () => {
       expect(screen.getByTestId('protected-content')).toBeInTheDocument();
     });
 
-    // ログアウト実行
-    await logout();
+    // ログアウト実行（状態更新を act() でラップ）
+    await act(async () => {
+      await logout();
+    });
 
     // /login へリダイレクト
     await waitFor(() => {

@@ -195,6 +195,22 @@ describe('api.post', () => {
       expect((e as ApiError).errorId).toBe('srv-123');
     }
   });
+
+  it('should support AbortSignal', async () => {
+    server.use(
+      http.post('/api/posts', async () => {
+        // Simulate slow response
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        return HttpResponse.json({ success: true, data: { id: 1 } });
+      })
+    );
+
+    const controller = new AbortController();
+    const promise = api.post('/posts', { title: 'Test' }, { signal: controller.signal });
+    controller.abort();
+
+    await expect(promise).rejects.toThrow();
+  });
 });
 
 describe('api.put', () => {
@@ -235,6 +251,22 @@ describe('api.put', () => {
       expect((e as ApiError).statusCode).toBe(403);
     }
   });
+
+  it('should support AbortSignal', async () => {
+    server.use(
+      http.put('/api/posts/1', async () => {
+        // Simulate slow response
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        return HttpResponse.json({ success: true, data: { id: 1, title: 'Updated' } });
+      })
+    );
+
+    const controller = new AbortController();
+    const promise = api.put('/posts/1', { title: 'Updated' }, { signal: controller.signal });
+    controller.abort();
+
+    await expect(promise).rejects.toThrow();
+  });
 });
 
 describe('api.delete', () => {
@@ -265,5 +297,21 @@ describe('api.delete', () => {
       expect(e).toBeInstanceOf(ApiError);
       expect((e as ApiError).statusCode).toBe(404);
     }
+  });
+
+  it('should support AbortSignal', async () => {
+    server.use(
+      http.delete('/api/posts/1', async () => {
+        // Simulate slow response
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        return HttpResponse.json({ success: true, data: null });
+      })
+    );
+
+    const controller = new AbortController();
+    const promise = api.delete('/posts/1', { signal: controller.signal });
+    controller.abort();
+
+    await expect(promise).rejects.toThrow();
   });
 });
