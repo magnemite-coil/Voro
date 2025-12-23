@@ -15,7 +15,7 @@ import {
 
 import { createMemoryRouter, RouterProvider, Navigate } from 'react-router';
 
-import { NotFoundPage } from './App';
+import App, { NotFoundPage } from './App';
 import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { LoginPage } from './pages/LoginPage/LoginPage';
@@ -192,5 +192,45 @@ describe('App - NotFoundPage', () => {
     await waitFor(() => {
       expect(screen.getByPlaceholderText('記事のタイトル')).toBeInTheDocument();
     });
+  });
+});
+
+// =============================================================================
+// App - Direct Mount
+// =============================================================================
+describe('App - Direct Mount', () => {
+  /**
+   * App コンポーネントを直接マウントしてカバレッジを確保
+   *
+   * 注意: createBrowserRouter は jsdom 環境でも動作するが、
+   * 一部のブラウザ API（history.pushState など）が制限される。
+   * このテストでは「マウントできること」と「初期画面の表示」を検証。
+   */
+  it('mounts App component and renders initial route (APP-7)', async () => {
+    // jsdom 環境での createBrowserRouter の制限によるエラーを抑制
+    // React Router が history API を使用する際に警告が出る場合があるため
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      render(<App />);
+
+      // App がマウントされると、以下のフローが発生:
+      // 1. / へアクセス
+      // 2. /posts/new へリダイレクト（Navigate）
+      // 3. 未認証なので /login へリダイレクト（ProtectedRoute）
+      // 4. LoginPage が表示される
+      await waitFor(
+        () => {
+          expect(screen.getByLabelText('ユーザー名')).toBeInTheDocument();
+        },
+        { timeout: 3000 }
+      );
+
+      expect(screen.getByLabelText('パスワード')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'ログイン' })).toBeInTheDocument();
+    } finally {
+      // テスト失敗時も確実にスパイを復元
+      consoleSpy.mockRestore();
+    }
   });
 });
