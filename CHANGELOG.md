@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - JSON Branch Coverage Tests for 100% Coverage (util/json.lisp)
+
+#### Updated Test File
+- **test/util-test.lisp**: Added JSON branch coverage tests (+5 test cases)
+  - `json-alist-string-key-test`: String key alist conversion (L28, L55 FALSE branches)
+  - `json-alist-non-alist-input-test`: Simple list → vector conversion (L50 FALSE, L62 TRUE branches)
+  - `json-alist-primitive-input-test`: Primitive value pass-through (L62 FALSE, L65 t branches)
+  - `json-alist-list-key-test`: List key data → vector conversion (L52 FALSE branch)
+  - `json-plist-string-key-test`: String key plist conversion (L73 FALSE branch)
+
+#### Test Coverage Results
+| Metric | Before | After | Target | Status |
+|--------|--------|-------|--------|--------|
+| Branch | 71.4% (20/28) | 100.0% (28/28) | 100% | ✅ Achieved |
+| Expression | 90.2% (83/92) | 97.8% (90/92) | 90%+ | ✅ Achieved |
+
+#### Key Test Scenarios
+- `alist-to-hash-table-recursive`: String keys, simple lists, primitives, list keys
+- `alist-value-to-jzon`: Nested alist with string key handling
+- `plist-to-hash-table`: String key plist handling
+- Jzon `nil`/`null`/`false` distinction compatibility
+
+#### Test Results
+- 16 backend tests passed
+- Coverage measurement completed
+
+#### Design Document
+- `docs/design/json-branch-coverage-improvement.md`: Implementation complete (v1.0)
+
+#### Branch
+- `test/json-branch-coverage-2025-12-25`
+
+#### Commit
+- `d31cb63`
+
+---
+
 ### Added - Frontend Coverage Improvement Option A (Header, Toast, App, api.ts)
 
 #### New Test Files

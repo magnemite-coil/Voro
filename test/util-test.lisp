@@ -339,6 +339,123 @@
     (ok (eq 'null (parse-json "null")))
     (ok (= 42 (parse-json "42")))))
 
+;;; JSON変換テスト（追加: Branch カバレッジ改善）
+
+(deftest json-alist-string-key-test ()
+  "文字列キーを持つalistのテスト"
+  (testing "alist-to-hash-table-recursive で文字列キー"
+    (let ((result (alist-to-hash-table-recursive
+                    '(("name" . "test") ("value" . 123)))))
+      (ok (hash-table-p result)
+          "Result is a hash-table")
+      (ok (equal "test" (gethash "name" result))
+          "String key 'name' works")
+      (ok (= 123 (gethash "value" result))
+          "String key 'value' works")))
+
+  (testing "ネストしたalistで文字列キー（値の変換）"
+    (let ((result (alist-to-hash-table-recursive
+                    '((:|outer| . (("inner" . "nested")))))))
+      (ok (hash-table-p result))
+      (let ((inner (gethash "outer" result)))
+        (ok (hash-table-p inner)
+            "Nested alist is converted to hash-table")
+        (ok (equal "nested" (gethash "inner" inner))
+            "String key in nested alist works")))))
+
+(deftest json-alist-non-alist-input-test ()
+  "alist以外の入力に対するテスト"
+  (testing "単純なリスト（非alist）はvectorに変換"
+    (let ((result (alist-to-hash-table-recursive '(1 2 3))))
+      (ok (vectorp result)
+          "Simple list is converted to vector")
+      (ok (= 3 (length result))
+          "Vector has correct length")
+      (ok (= 1 (aref result 0))
+          "First element is 1")
+      (ok (= 2 (aref result 1))
+          "Second element is 2")
+      (ok (= 3 (aref result 2))
+          "Third element is 3")))
+
+  (testing "文字列のリストもvectorに変換"
+    (let ((result (alist-to-hash-table-recursive '("a" "b" "c"))))
+      (ok (vectorp result))
+      (ok (equal "a" (aref result 0)))))
+
+  (testing "混合リストもvectorに変換"
+    (let ((result (alist-to-hash-table-recursive '(1 "two" :three))))
+      (ok (vectorp result))
+      (ok (= 3 (length result))))))
+
+(deftest json-alist-primitive-input-test ()
+  "プリミティブ値の入力に対するテスト"
+  (testing "数値はそのまま返す"
+    (ok (= 42 (alist-to-hash-table-recursive 42))
+        "Integer is returned as-is")
+    (ok (= 3.14 (alist-to-hash-table-recursive 3.14))
+        "Float is returned as-is"))
+
+  (testing "文字列はそのまま返す"
+    (ok (equal "hello" (alist-to-hash-table-recursive "hello"))
+        "String is returned as-is"))
+
+  (testing "キーワードシンボルはそのまま返す"
+    (ok (eq :keyword (alist-to-hash-table-recursive :keyword))
+        "Keyword is returned as-is"))
+
+  (testing "tはそのまま返す"
+    (ok (eq t (alist-to-hash-table-recursive t))
+        "T is returned as-is"))
+
+  (testing "vectorはそのまま返す"
+    (let ((input #(1 2 3)))
+      (ok (eq input (alist-to-hash-table-recursive input))
+          "Vector is returned as-is (not converted)"))))
+
+(deftest json-alist-list-key-test ()
+  "キーがリストの場合のテスト（alistとして扱われない）"
+  (testing "キーがリストの場合はトップレベルでalistではない"
+    (let ((result (alist-to-hash-table-recursive
+                    '((((:key-list)) "value1" "value2")))))
+      ;; トップレベルでは (caar data) = ((:key-list)) がリストなので
+      ;; alist ではないと判定され、vector に変換される
+      (ok (vectorp result)
+          "Top-level is converted to vector (not alist)")
+      (ok (= 1 (length result))
+          "Vector has one element")
+      ;; 要素 (((:key-list)) "value1" "value2") も (caar ...) がリストなので
+      ;; alist ではないと判定され、vector に変換される
+      (ok (vectorp (aref result 0))
+          "Element is also converted to vector (nested list key)")))
+
+  (testing "複数のリストキー要素を持つ場合"
+    (let ((result (alist-to-hash-table-recursive
+                    '((((:a)) 1) (((:b)) 2)))))
+      (ok (vectorp result))
+      (ok (= 2 (length result)))
+      (ok (vectorp (aref result 0)))
+      (ok (vectorp (aref result 1))))))
+
+(deftest json-plist-string-key-test ()
+  "文字列キーを持つplistのテスト"
+  (testing "文字列キーのplist"
+    (let ((result (plist-to-hash-table '("name" "test" "value" 123))))
+      (ok (hash-table-p result)
+          "Result is a hash-table")
+      (ok (equal "test" (gethash "name" result))
+          "String key 'name' works")
+      (ok (= 123 (gethash "value" result))
+          "String key 'value' works")))
+
+  (testing "混合キー（シンボルと文字列）のplist"
+    (let ((result (plist-to-hash-table '(:|symbol| "sym-value" "string" "str-value"))))
+      (ok (hash-table-p result))
+      (ok (equal "sym-value" (gethash "symbol" result))
+          "Symbol key works")
+      (ok (equal "str-value" (gethash "string" result))
+          "String key works"))))
+
 ;;; リクエストユーティリティテスト
 
 (deftest test-get-body-param
