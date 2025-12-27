@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Model Post Branch Coverage Tests for 100% Coverage (model/post.lisp)
+
+#### Updated Test File
+- **test/model/post-test.lisp**: Added branch coverage tests (+2 test cases)
+  - `test-create-post-with-user-object`: Tests `create-post` with user object parameter (L150 TRUE branch)
+  - `test-format-timestamp-nil`: Defensive test for nil timestamp handling
+
+#### Test Coverage Results
+| Metric | Before | After | Target | Status |
+|--------|--------|-------|--------|--------|
+| Branch | 83.3% (5/6) | 100.0% (6/6) | 100% | ✅ Achieved |
+| Expression | 93.0% (133/143) | 93.0% (133/143) | 90%+ | ✅ Maintained |
+
+#### Key Test Scenarios
+- `create-post`: User object parameter (previously only integer ID was tested)
+- `format-timestamp`: Nil input defensive test (optional, for code robustness)
+
+#### Test Results
+- All backend tests passed
+- Coverage measurement completed
+
+#### Design Document
+- `docs/design/model-post-branch-coverage-expansion.md`: Implementation complete
+
+#### Branch
+- `test/model-post-branch-coverage-2025-12-25`
+
+---
+
 ### Added - JSON Branch Coverage Tests for 100% Coverage (util/json.lisp)
 
 #### Updated Test File
