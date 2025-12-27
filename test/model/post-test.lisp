@@ -63,6 +63,21 @@
           (ok (eq (post-published post) t)
               "Published flag is set to T"))))))
 
+(deftest test-create-post-with-user-object
+  (with-test-environment
+    (with-test-db
+      (testing "userオブジェクトを直接渡して投稿作成"
+        (let* ((user (create-test-user))
+               ;; user-id ではなく user オブジェクトを渡す
+               ;; :published は省略（デフォルト nil = 下書き）
+               (post (create-post user "Title with User Object" "Content")))
+          (ok (not (null post))
+              "Post is created with user object")
+          (ok (= (post-user-id post) (user-id user))
+              "user_id matches the user's id")
+          (ok (string= (post-title post) "Title with User Object")
+              "Title is set correctly"))))))
+
 ;;;
 ;;; find-post-by-id テスト
 ;;;
@@ -465,3 +480,13 @@
           ;; published が NIL の場合の挙動確認
           (ok (null (cdr (assoc :|published| alist)))
               "published is NIL/false in alist"))))))
+
+;;;
+;;; 内部関数テスト（防御的テスト）
+;;;
+
+(deftest test-format-timestamp-nil
+  (testing "nilタイムスタンプはnilを返す"
+    ;; 純粋関数のためDB接続不要
+    (ok (null (voro.model.post::format-timestamp nil))
+        "NIL timestamp returns NIL")))
