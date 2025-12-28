@@ -326,3 +326,32 @@
             "*db-connection* should be restored after ensure-db-connected")
         (ok (not (null mito.connection:*connection*))
             "mito.connection:*connection* should be restored")))))
+
+;;;
+;;; 切断失敗時のエラーハンドリングテスト
+;;;
+
+(deftest test-try-connect-db-disconnect-failure
+  (testing "既存接続の切断失敗時も新規接続を試行する"
+    (with-test-environment
+      ;; 接続確認
+      (ok (not (null *db-connection*)))
+      ;; dbi:disconnect をスタブ化
+      (let ((original-fn (symbol-function 'dbi:disconnect))
+            (disconnect-called nil))
+        (unwind-protect
+            (progn
+              (setf (symbol-function 'dbi:disconnect)
+                    (lambda (conn)
+                      (declare (ignore conn))
+                      (setf disconnect-called t)
+                      (error "Simulated disconnect failure")))
+              ;; try-connect-db を呼び出し
+              ;; 注意: 旧接続はスタブ化によりリークするが、テスト環境内で許容される
+              ;; （詳細は設計書「コネクションリーク対策」セクション参照）
+              (ok (voro.db::try-connect-db)
+                  "try-connect-db should succeed despite disconnect failure")
+              (ok disconnect-called
+                  "dbi:disconnect should have been called"))
+          ;; 元の関数を復元
+          (setf (symbol-function 'dbi:disconnect) original-fn))))))
