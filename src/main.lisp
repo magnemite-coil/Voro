@@ -10,6 +10,7 @@
                 :disconnect-redis)
   (:import-from :voro.util.log
                 :log-info
+                :log-warn
                 :log-error)
   (:export
    :start
@@ -71,14 +72,22 @@
   (log-info "Stopping Voro application...")
 
   ;; Webサーバー停止
-  (when *server*
-    (clack:stop *server*)
-    (setf *server* nil))
+  (let ((server-stop-failed nil))
+    (when *server*
+      (handler-case
+          (progn
+            (clack:stop *server*)
+            (setf *server* nil))
+        (error (e)
+          (log-error "Failed to stop server - resources not released"
+                     :context (list :|error| (princ-to-string e)))
+          (setf server-stop-failed t))))
 
-  ;; Redis切断
-  (disconnect-redis)
-
-  ;; データベース切断
-  (disconnect-db)
-
-  (log-info "Voro stopped"))
+    (if server-stop-failed
+        ;; 停止失敗時: DB/Redis は切断しない（サーバーがまだ使用中の可能性）
+        (log-error "Voro stop incomplete - server may still be running")
+        ;; 停止成功時（またはサーバー未起動時）: DB/Redis を切断
+        (progn
+          (disconnect-redis)
+          (disconnect-db)
+          (log-info "Voro stopped")))))
