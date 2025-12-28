@@ -251,3 +251,33 @@
             (setf (symbol-function 'voro:stop) original-stop-fn)
             ;; Redis接続を再確立
             (connect-redis)))))))
+
+;;;
+;;; clack:stop 失敗時のエラーハンドリングテスト
+;;;
+
+(deftest test-stop-clack-failure
+  (with-clean-server-state
+    (testing "clack:stop失敗時は*server*が保持されDB/Redisは切断されない"
+      ;; *server*にダミー値を設定
+      (let ((dummy-server (make-instance 'standard-object)))
+        (setf voro::*server* dummy-server)
+        (let ((original-fn (symbol-function 'clack:stop)))
+          (unwind-protect
+              (progn
+                (setf (symbol-function 'clack:stop)
+                      (lambda (server)
+                        (declare (ignore server))
+                        (error "Simulated clack:stop failure")))
+                ;; stop 呼び出し
+                (stop)
+                ;; *server* は NIL にならない（サーバーが残存していることを示す）
+                (ok (not (null voro::*server*))
+                    "*server* should NOT be NIL when clack:stop fails")
+                ;; 同じオブジェクトが保持されている
+                (ok (eq voro::*server* dummy-server)
+                    "*server* should retain the original server object"))
+            ;; 元の関数を復元
+            (setf (symbol-function 'clack:stop) original-fn)
+            ;; クリーンアップ: *server* を NIL に戻す
+            (setf voro::*server* nil)))))))
