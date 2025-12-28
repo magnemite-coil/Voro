@@ -326,3 +326,66 @@
             "*db-connection* should be restored after ensure-db-connected")
         (ok (not (null mito.connection:*connection*))
             "mito.connection:*connection* should be restored")))))
+
+;;;
+;;; 切断失敗時のエラーハンドリングテスト
+;;;
+
+(deftest test-try-connect-db-disconnect-failure
+  (testing "既存接続の切断失敗時も新規接続を試行する"
+    (with-test-environment
+      ;; 接続確認
+      (ok (not (null *db-connection*)))
+      ;; dbi:disconnect をスタブ化
+      (let ((original-fn (symbol-function 'dbi:disconnect))
+            (disconnect-called nil))
+        (unwind-protect
+            (progn
+              (setf (symbol-function 'dbi:disconnect)
+                    (lambda (conn)
+                      (declare (ignore conn))
+                      (setf disconnect-called t)
+                      (error "Simulated disconnect failure")))
+              ;; try-connect-db を呼び出し
+              ;; 注意: 旧接続はスタブ化によりリークするが、テスト環境内で許容される
+              ;; （詳細は設計書「コネクションリーク対策」セクション参照）
+              (ok (voro.db::try-connect-db)
+                  "try-connect-db should succeed despite disconnect failure")
+              (ok disconnect-called
+                  "dbi:disconnect should have been called"))
+          ;; 元の関数を復元
+          (setf (symbol-function 'dbi:disconnect) original-fn))))))
+
+(deftest test-db-health-check-mito-disconnect-failure
+  (testing "ヘルスチェック失敗時のmito切断失敗は抑制される"
+    (with-test-environment
+      (with-config-override ((voro.config:*db-health-check-enabled* t))
+        (ok (not (null *db-connection*)))
+        ;; 接続を壊す
+        (dbi:disconnect *db-connection*)
+        ;; mito:disconnect-toplevel をスタブ化
+        (let ((original-fn (symbol-function 'mito:disconnect-toplevel))
+              (original-time voro.db::*last-health-check-time*)
+              (disconnect-called nil))
+          (unwind-protect
+              (progn
+                (setf (symbol-function 'mito:disconnect-toplevel)
+                      (lambda ()
+                        (setf disconnect-called t)
+                        (error "Simulated mito disconnect failure")))
+                ;; タイムスタンプをリセット
+                (setf voro.db::*last-health-check-time* 0)
+                ;; ヘルスチェック実行
+                (ok (null (db-health-check))
+                    "Health check should return NIL")
+                (ok disconnect-called
+                    "mito:disconnect-toplevel should have been called")
+                ;; *db-connection* が NIL になることを確認
+                (ok (null *db-connection*)
+                    "*db-connection* should be NIL"))
+            ;; 元の関数とタイムスタンプを復元
+            (setf (symbol-function 'mito:disconnect-toplevel) original-fn)
+            (setf voro.db::*last-health-check-time* original-time)
+            ;; 重要: スタブ復元後に mito 接続を明示的に切断
+            ;; （*db-connection* が NIL のため teardown では切断されない）
+            (handler-case (mito:disconnect-toplevel) (error () nil))))))))

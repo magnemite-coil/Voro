@@ -170,6 +170,9 @@ Voroのテスト基盤は、本番データベースを保護するための**8�
    - 各テストは独立して実行可能である必要があります
    - テスト間で状態を共有しないでください
    - `with-test-db` マクロを使用してトランザクション分離を保証してください
+   - **例外**: Infrastructure層（`db.lisp`, `redis.lisp`）のテストは `with-test-environment` を使用
+     - 接続・切断自体をテストするため、トランザクション内での実行が不適切
+     - 詳細は `docs/design/infrastructure-coverage-design.md` を参照
 
 ## 🤝 貢献ガイドライン
 

@@ -442,3 +442,36 @@
       (ok (not (null *redis-connection*)))
       ;; 値が設定されたことを確認
       (ok (string= (red-hget "test-reconnect-hash" "field") "value")))))
+
+;;;
+;;; 切断失敗時のエラーハンドリングテスト
+;;;
+
+(deftest test-try-connect-redis-disconnect-failure
+  (testing "既存接続の切断失敗時も新規接続を試行する"
+    (with-test-environment
+      (ok (not (null *redis-connection*)))
+      ;; cl-redis 内部状態を事前にクリア（スタブ化後の redis:connect を成功させるため）
+      ;; ただし *redis-connection* は復元して「接続がある」状態を維持
+      (let ((saved-connection *redis-connection*))
+        (redis:disconnect)
+        (setf *redis-connection* saved-connection))
+      (let ((original-fn (symbol-function 'redis:disconnect))
+            (disconnect-called nil))
+        (unwind-protect
+            (progn
+              (setf (symbol-function 'redis:disconnect)
+                    (lambda ()
+                      (setf disconnect-called t)
+                      (error "Simulated Redis disconnect failure")))
+              ;; try-connect-redis を呼び出し
+              ;; *redis-connection* が非 nil なので、まず redis:disconnect が呼ばれ（スタブがエラーを投げる）
+              ;; その後、新規接続が試行される
+              (ok (voro.redis::try-connect-redis)
+                  "try-connect-redis should succeed despite disconnect failure")
+              (ok disconnect-called
+                  "redis:disconnect should have been called"))
+          ;; 元の関数を復元
+          (setf (symbol-function 'redis:disconnect) original-fn)
+          ;; cl-redis内部状態のクリーンアップ
+          (handler-case (redis:disconnect) (error () nil)))))))
