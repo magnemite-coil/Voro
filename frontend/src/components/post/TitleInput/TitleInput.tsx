@@ -1,4 +1,5 @@
 // components/post/TitleInput/TitleInput.tsx
+import clsx from 'clsx';
 import styles from './TitleInput.module.css';
 
 interface TitleInputProps {
@@ -20,7 +21,11 @@ export function TitleInput({
     <div className={styles.titleGroup}>
       <input
         type="text"
-        className={`${styles.titleInput} ${error ? styles.hasError : ''} ${isLoading ? styles.loading : ''}`}
+        className={clsx(
+          styles.titleInput,
+          error && styles.hasError,
+          isLoading && styles.loading
+        )}
         placeholder="記事のタイトル"
         value={value}
         onChange={(e) => onChange(e.target.value)}

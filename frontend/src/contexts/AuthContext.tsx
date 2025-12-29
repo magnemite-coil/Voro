@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { api, ApiError } from '../services/api';
+import type { LoginResponse } from '../types/api';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -54,13 +55,6 @@ function parseAuthData(json: string): StoredAuthData | null {
   } catch {
     return null;
   }
-}
-
-interface LoginResponse {
-  user: {
-    id: number;
-    username: string;
-  };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

@@ -1,4 +1,5 @@
 // components/post/ContentEditor/ContentEditor.tsx
+import clsx from 'clsx';
 import styles from './ContentEditor.module.css';
 
 interface ContentEditorProps {
@@ -19,7 +20,11 @@ export function ContentEditor({
   return (
     <div className={styles.contentGroup}>
       <textarea
-        className={`${styles.contentEditor} ${error ? styles.hasError : ''} ${isLoading ? styles.loading : ''}`}
+        className={clsx(
+          styles.contentEditor,
+          error && styles.hasError,
+          isLoading && styles.loading
+        )}
         placeholder="Markdownで本文を書く..."
         value={value}
         onChange={(e) => onChange(e.target.value)}

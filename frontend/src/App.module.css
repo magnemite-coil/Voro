@@ -1,0 +1,17 @@
+/* App.module.css */
+.notFoundContainer {
+  text-align: center;
+  padding: 40px;
+}
+
+.notFoundTitle {
+  color: var(--neon-pink);
+}
+
+.notFoundMessage {
+  color: var(--text-muted);
+}
+
+.notFoundLink {
+  color: var(--neon-cyan);
+}

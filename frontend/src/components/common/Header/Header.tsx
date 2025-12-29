@@ -1,5 +1,6 @@
 // components/common/Header/Header.tsx
 import { type ReactNode, type MouseEvent } from 'react';
+import clsx from 'clsx';
 import { Link } from 'react-router';
 import styles from './Header.module.css';
 
@@ -25,14 +26,14 @@ export function Header({ actions, activeTab = 'new', onNewPostClick }: HeaderPro
         </Link>
         <nav className={styles.nav}>
           <span
-            className={`${styles.navTab} ${styles.disabled}`}
+            className={clsx(styles.navTab, styles.disabled)}
             aria-disabled="true"
           >
             記事一覧
           </span>
           <Link
             to="/posts/new"
-            className={`${styles.navTab} ${activeTab === 'new' ? styles.active : ''}`}
+            className={clsx(styles.navTab, activeTab === 'new' && styles.active)}
             onClick={handleNewPostClick}
           >
             新規作成

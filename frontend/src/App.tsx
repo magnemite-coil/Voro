@@ -6,13 +6,14 @@ import { Toast } from './components/common/Toast/Toast';
 import { LoginPage } from './pages/LoginPage/LoginPage';
 import { PostEditorPage } from './pages/PostEditorPage/PostEditorPage';
 import { ProtectedRoute } from './components/common/ProtectedRoute/ProtectedRoute';
+import styles from './App.module.css';
 
 export function NotFoundPage() {
   return (
-    <div style={{ textAlign: 'center', padding: '40px' }}>
-      <h1 style={{ color: 'var(--neon-pink)' }}>404</h1>
-      <p style={{ color: 'var(--text-muted)' }}>ページが見つかりません</p>
-      <Link to="/posts/new" style={{ color: 'var(--neon-cyan)' }}>
+    <div className={styles.notFoundContainer}>
+      <h1 className={styles.notFoundTitle}>404</h1>
+      <p className={styles.notFoundMessage}>ページが見つかりません</p>
+      <Link to="/posts/new" className={styles.notFoundLink}>
         新規作成ページへ
       </Link>
     </div>
