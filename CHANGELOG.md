@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Frontend code consistency refactoring**: Unified CSS class construction and type definitions
+  - Standardized all CSS class construction to use `clsx` (following Button.tsx pattern)
+  - Consolidated duplicate `LoginResponse` type definition to `types/api.ts`
+  - Migrated `App.tsx` inline styles to CSS Modules (`App.module.css`)
+  - Affected files: ContentEditor, TitleInput, Header, Toast, AuthContext, App
+
 ### Fixed
 
 - **Server stop error handling**: Improved `stop` function to gracefully handle `clack:stop` failures
@@ -14,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - When server stop fails, DB/Redis connections are preserved to prevent partial shutdown
   - Prevents application from entering inconsistent state
 
-### Changed
+### Infrastructure
 
 - **Infrastructure layer test coverage**: Enhanced error handling branch coverage
   - Added tests for connection disconnect failure scenarios
