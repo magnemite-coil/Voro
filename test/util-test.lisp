@@ -17,7 +17,9 @@
                 :to-json-plist
                 :parse-json)
   (:import-from :voro.util.request
-                :get-body-param)
+                :get-body-param
+                :get-query-param
+                :parse-integer-param)
   (:import-from :cl-ppcre
                 :scan))
 
@@ -522,6 +524,50 @@
     (let ((params '(("dup" . "first") ("other" . "value") ("dup" . "second"))))
       (ok (equal "first" (get-body-param params "dup"))
           "First occurrence is returned for duplicate keys"))))
+
+;;; get-query-param テスト
+
+(deftest test-get-query-param
+  (testing "存在するパラメータを取得"
+    (let ((params '(("page" . "1") ("per_page" . "20"))))
+      (ok (string= (get-query-param params "page") "1"))
+      (ok (string= (get-query-param params "per_page") "20"))))
+
+  (testing "存在しないパラメータはNIL"
+    (ok (null (get-query-param '() "page"))))
+
+  (testing "デフォルト値を返す"
+    (ok (string= (get-query-param '() "page" "1") "1"))
+    (ok (string= (get-query-param '(("other" . "value")) "page" "1") "1")))
+
+  (testing "パラメータが存在する場合はデフォルト値を無視"
+    (let ((params '(("page" . "5"))))
+      (ok (string= (get-query-param params "page" "1") "5"))))
+
+  (testing "キーの比較は文字列比較（string=）"
+    (let ((params '(("Page" . "1"))))
+      (ok (null (get-query-param params "page")))
+      (ok (string= (get-query-param params "Page") "1")))))
+
+;;; parse-integer-param テスト
+
+(deftest test-parse-integer-param
+  (testing "正常な整数文字列"
+    (ok (= (parse-integer-param "42") 42))
+    (ok (= (parse-integer-param "0") 0))
+    (ok (= (parse-integer-param "-10") -10)))
+
+  (testing "不正な文字列はデフォルト値"
+    (ok (= (parse-integer-param "invalid" 1) 1))
+    (ok (= (parse-integer-param "12.5" 1) 1))
+    (ok (= (parse-integer-param "" 1) 1)))
+
+  (testing "NILはデフォルト値"
+    (ok (= (parse-integer-param nil 1) 1)))
+
+  (testing "デフォルト未指定でNIL"
+    (ok (null (parse-integer-param nil)))
+    (ok (null (parse-integer-param "invalid")))))
 
 ;;;
 ;;; validate-password 追加テスト（境界値・特殊ケース）
