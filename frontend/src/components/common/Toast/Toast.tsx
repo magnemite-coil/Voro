@@ -1,4 +1,5 @@
 // components/common/Toast/Toast.tsx
+import clsx from 'clsx';
 import { useNotification } from '../../../contexts/NotificationContext';
 import styles from './Toast.module.css';
 
@@ -12,7 +13,7 @@ export function Toast() {
       {notifications.map((notification) => (
         <div
           key={notification.id}
-          className={`${styles.toast} ${styles[notification.type]}`}
+          className={clsx(styles.toast, styles[notification.type])}
           role="alert"
         >
           <span className={styles.message}>{notification.message}</span>
