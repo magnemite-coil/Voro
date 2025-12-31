@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Migrated `App.tsx` inline styles to CSS Modules (`App.module.css`)
   - Affected files: ContentEditor, TitleInput, Header, Toast, AuthContext, App
 
+- **Request parameter utilities consolidation**: Moved local functions from handler to util layer
+  - Moved `get-query-param` and `parse-integer-param` from `handler/post.lisp` to `util/request.lisp`
+  - Updated handler to use pure function interface (explicit query-parameters argument)
+  - Added comprehensive tests for new utility functions
+
 ### Fixed
 
 - **Server stop error handling**: Improved `stop` function to gracefully handle `clack:stop` failures
