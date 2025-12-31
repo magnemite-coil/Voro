@@ -28,32 +28,22 @@
                 :not-found-error
                 :not-found-error-message)
   (:import-from :voro.util.request
-                :get-body-param))
+                :get-body-param
+                :get-query-param
+                :parse-integer-param))
 ;; 注意: authorization-error-message は現在未使用（403では固定メッセージ "Forbidden" を返す）
 
 (in-package :voro.handler.post)
 
 ;;; ヘルパー関数
-;;; 以下の関数は post.lisp 固有（他のハンドラーで必要になった時点で共通化を検討）:
-;;; - get-query-param
-;;; - parse-integer-param
 ;;;
-;;; JSONパース: Lack の http-body ミドルウェア（内部でYason使用）がJSONリクエストを自動的にパースする。
-;;; パース結果は文字列キーのalistとして request-body-parameters に格納される。
-;;; （例: "title" → "投稿タイトル", "published" → t または nil）
-;;; 注意: JSONのboolean値（true/false）はYasonによりLispの t/nil に変換される（文字列ではない）
-
-(defun get-query-param (key &optional default)
-  "クエリパラメータを取得（post.lisp で新規追加）"
-  (or (cdr (assoc key (lack.request:request-query-parameters *request*) :test #'string=))
-      default))
-
-(defun parse-integer-param (value &optional default)
-  "パラメータを整数に変換（post.lisp で新規追加）"
-  (if value
-      (handler-case (parse-integer value)
-        (error () default))
-      default))
+;;; JSON処理の役割分担:
+;;; - リクエスト解析: Lack の http-body ミドルウェア（内部でYason使用）が
+;;;   JSONリクエストを自動的にパースする。
+;;;   パース結果は文字列キーのalistとして request-body-parameters に格納される。
+;;;   （例: "title" → "投稿タイトル", "published" → t または nil）
+;;;   注意: JSONのboolean値（true/false）はYasonによりLispの t/nil に変換される（文字列ではない）
+;;; - レスポンス生成: Jzon を使用（voro.util.json 参照）
 
 (defun posts-to-json (posts)
   "投稿リストをJSON用形式に変換"
@@ -95,8 +85,9 @@
 
 ;; 公開投稿一覧取得
 (defroute (*app* "/api/posts" :method :GET) ()
-  (let ((page (parse-integer-param (get-query-param "page") 1))
-        (per-page (parse-integer-param (get-query-param "per_page") 20)))
+  (let* ((query-params (lack.request:request-query-parameters *request*))
+         (page (parse-integer-param (get-query-param query-params "page") 1))
+         (per-page (parse-integer-param (get-query-param query-params "per_page") 20)))
 
     (handler-case
         (multiple-value-bind (posts pagination)
@@ -204,9 +195,10 @@
 
 ;; 特定ユーザーの公開投稿一覧
 (defroute (*app* "/api/users/:user_id/posts" :method :GET) (&key user_id)
-  (let ((target-user-id (parse-integer-param user_id))
-        (page (parse-integer-param (get-query-param "page") 1))
-        (per-page (parse-integer-param (get-query-param "per_page") 20)))
+  (let* ((query-params (lack.request:request-query-parameters *request*))
+         (target-user-id (parse-integer-param user_id))
+         (page (parse-integer-param (get-query-param query-params "page") 1))
+         (per-page (parse-integer-param (get-query-param query-params "per_page") 20)))
 
     (if (not target-user-id)
         (response-error 400 "Invalid user ID")
@@ -233,9 +225,10 @@
     (if (not user-id)
         (response-error 401 "Authentication required")
 
-        (let ((page (parse-integer-param (get-query-param "page") 1))
-              (per-page (parse-integer-param (get-query-param "per_page") 20))
-              (published-param (get-query-param "published")))
+        (let* ((query-params (lack.request:request-query-parameters *request*))
+               (page (parse-integer-param (get-query-param query-params "page") 1))
+               (per-page (parse-integer-param (get-query-param query-params "per_page") 20))
+               (published-param (get-query-param query-params "published")))
 
           ;; published パラメータの変換
           ;; 未指定: :all, "true": t, "false": nil
