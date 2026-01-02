@@ -351,6 +351,47 @@ describe('SignupPage - Signup Success', () => {
     });
   });
 
+  // #13.5: 送信前トリム処理の検証（ユーザー名・メールのみ、パスワードはそのまま）
+  it('trims username and email before sending request', async () => {
+    let capturedBody: { username: string; email: string; password: string } | null = null;
+
+    server.use(
+      http.post('/api/auth/register', async ({ request }) => {
+        capturedBody = (await request.json()) as typeof capturedBody;
+        return HttpResponse.json({
+          success: true,
+          data: {
+            user: { id: 99, username: capturedBody!.username },
+          },
+        });
+      })
+    );
+
+    renderSignupPage();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('ユーザー名')).toBeInTheDocument();
+    });
+
+    // 先頭/末尾に空白を含む入力
+    await userEvent.type(screen.getByLabelText('ユーザー名'), '  spaceduser  ');
+    await userEvent.type(screen.getByLabelText('メールアドレス'), '  spaced@example.com  ');
+    await userEvent.type(screen.getByLabelText('パスワード'), 'password123');
+    await userEvent.type(screen.getByLabelText('パスワード（確認）'), 'password123');
+    await userEvent.click(screen.getByRole('button', { name: 'サインアップ' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent('アカウントを作成しました');
+    });
+
+    // リクエストボディがトリム済みであることを確認
+    expect(capturedBody).not.toBeNull();
+    expect(capturedBody!.username).toBe('spaceduser');
+    expect(capturedBody!.email).toBe('spaced@example.com');
+    // パスワードはトリムされない
+    expect(capturedBody!.password).toBe('password123');
+  });
+
   // #14: サインアップ成功で /posts/new にリダイレクト（replace: true）
   it('redirects to /posts/new with history replacement on signup success', async () => {
     const { router } = renderSignupPage();
@@ -573,6 +614,8 @@ describe('SignupPage - Loading State', () => {
   // #21: 送信中はボタンがdisabled + Spinner表示
   it('shows loading state during submission', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
+    // fake timers 使用時は userEvent を advanceTimers オプションでセットアップ
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
     let resolveDelay!: () => void;
     const delayPromise = new Promise<void>((resolve) => {
@@ -592,13 +635,13 @@ describe('SignupPage - Loading State', () => {
       expect(screen.getByLabelText('ユーザー名')).toBeInTheDocument();
     });
 
-    await userEvent.type(screen.getByLabelText('ユーザー名'), 'newuser');
-    await userEvent.type(screen.getByLabelText('メールアドレス'), 'test@example.com');
-    await userEvent.type(screen.getByLabelText('パスワード'), 'password123');
-    await userEvent.type(screen.getByLabelText('パスワード（確認）'), 'password123');
+    await user.type(screen.getByLabelText('ユーザー名'), 'newuser');
+    await user.type(screen.getByLabelText('メールアドレス'), 'test@example.com');
+    await user.type(screen.getByLabelText('パスワード'), 'password123');
+    await user.type(screen.getByLabelText('パスワード（確認）'), 'password123');
 
     const submitButton = screen.getByRole('button', { name: 'サインアップ' });
-    await userEvent.click(submitButton);
+    await user.click(submitButton);
 
     // 即座に検証（レスポンス待ち中）
     expect(submitButton).toBeDisabled();

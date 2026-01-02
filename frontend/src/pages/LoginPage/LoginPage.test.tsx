@@ -475,6 +475,8 @@ describe('LoginPage - Loading State', () => {
   // #16: 送信中はボタンが disabled かつ isLoading 状態
   it('shows loading state during submission', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
+    // fake timers 使用時は userEvent を advanceTimers オプションでセットアップ
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
     let resolveDelay!: () => void;
     const delayPromise = new Promise<void>((resolve) => {
@@ -494,11 +496,11 @@ describe('LoginPage - Loading State', () => {
       expect(screen.getByLabelText('ユーザー名')).toBeInTheDocument();
     });
 
-    await userEvent.type(screen.getByLabelText('ユーザー名'), 'testuser');
-    await userEvent.type(screen.getByLabelText('パスワード'), 'wrongpassword');
+    await user.type(screen.getByLabelText('ユーザー名'), 'testuser');
+    await user.type(screen.getByLabelText('パスワード'), 'wrongpassword');
 
     const submitButton = screen.getByRole('button', { name: 'ログイン' });
-    await userEvent.click(submitButton);
+    await user.click(submitButton);
 
     // 即座に検証（レスポンス待ち中）
     expect(submitButton).toBeDisabled();
