@@ -332,14 +332,12 @@ describe('LoginPage - Login Failure', () => {
       expect(screen.getByText('Invalid credentials')).toBeInTheDocument();
     });
 
+    // エラーメッセージに role="alert" が設定されている（WCAG 4.1.3 準拠）
+    const errorMessage = screen.getByText('Invalid credentials');
+    expect(errorMessage.closest('[role="alert"]')).toBeInTheDocument();
+
     // localStorage が変更されていないこと
     expect(localStorage.getItem('voro_auth')).toBe(initialLocalStorage);
-
-    // 成功トーストが表示されないこと（alert がない、または「ログインしました」を含まない）
-    const alert = screen.queryByRole('alert');
-    if (alert) {
-      expect(alert).not.toHaveTextContent('ログインしました');
-    }
   });
 
   // #12: 認証エラー（401）でメッセージ表示
@@ -377,8 +375,8 @@ describe('LoginPage - Login Failure', () => {
     }
   });
 
-  // #13: サーバーエラー（500）で汎用メッセージ表示
-  it('shows error message on 500 server error', async () => {
+  // #13: サーバーエラー（500）で汎用メッセージ表示（error_id を含む）
+  it('shows error message with error_id on 500 server error', async () => {
     const initialLocalStorage = localStorage.getItem('voro_auth');
 
     server.use(
@@ -397,19 +395,14 @@ describe('LoginPage - Login Failure', () => {
     await userEvent.type(screen.getByLabelText('パスワード'), 'password');
     await userEvent.click(screen.getByRole('button', { name: 'ログイン' }));
 
-    // サーバーエラーメッセージが表示される
+    // サーバーエラーメッセージが error_id を含んで表示される
     await waitFor(() => {
-      expect(screen.getByText('Internal server error')).toBeInTheDocument();
+      expect(screen.getByText(/サーバーエラーが発生しました/)).toBeInTheDocument();
+      expect(screen.getByText(/test-error-id/)).toBeInTheDocument();
     });
 
     // localStorage が変更されていないこと
     expect(localStorage.getItem('voro_auth')).toBe(initialLocalStorage);
-
-    // 成功トーストが表示されないこと（alert がない、または「ログインしました」を含まない）
-    const alert = screen.queryByRole('alert');
-    if (alert) {
-      expect(alert).not.toHaveTextContent('ログインしました');
-    }
   });
 
   // #14: ネットワークエラーでデフォルトメッセージ表示
