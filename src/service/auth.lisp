@@ -34,9 +34,13 @@
         (validate-email email)
 
         ;; ユーザー名の重複チェック
+        ;; セキュリティ: ユーザー列挙攻撃を防ぐため、一般化されたメッセージを返す
+        ;; 詳細はログに記録されるため、デバッグには影響しない
         (when (find-user-by-username username)
+          (log-info "Registration failed: username already exists"
+                    :context (list :|username| username))
           (error 'validation-error
-                 :message "Username already exists"))
+                 :message "Registration failed. Please try again."))
 
         ;; ユーザー作成
         (let ((user (create-user username password :email email)))

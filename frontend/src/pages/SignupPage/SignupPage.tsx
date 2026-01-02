@@ -183,7 +183,7 @@ export function SignupPage() {
             className={authStyles.input}
             value={username}
             onChange={(e) => handleUsernameChange(e.target.value)}
-            placeholder="ユーザー名を入力（3文字以上）"
+            placeholder="英字で始まる3文字以上（英数字と_のみ）"
             autoComplete="username"
             minLength={3}
             maxLength={50}
@@ -241,7 +241,7 @@ export function SignupPage() {
               className={clsx(authStyles.input, authStyles.inputWithToggle)}
               value={password}
               onChange={(e) => handlePasswordChange(e.target.value)}
-              placeholder="パスワードを入力（8文字以上）"
+              placeholder="8文字以上（英字と数字を含む）"
               autoComplete="new-password"
               minLength={8}
               aria-describedby={
@@ -334,7 +334,7 @@ export function SignupPage() {
 
         <div className={authStyles.linkContainer}>
           <span className={authStyles.linkText}>アカウントをお持ちの方は</span>
-          <Link to="/login" className={authStyles.link}>
+          <Link to="/login" state={{ from: { pathname: from } }} className={authStyles.link}>
             ログイン
           </Link>
         </div>

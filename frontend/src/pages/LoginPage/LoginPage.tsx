@@ -118,7 +118,7 @@ export function LoginPage() {
 
         <div className={authStyles.linkContainer}>
           <span className={authStyles.linkText}>アカウントをお持ちでない方は</span>
-          <Link to="/signup" className={authStyles.link}>
+          <Link to="/signup" state={{ from: { pathname: from } }} className={authStyles.link}>
             サインアップ
           </Link>
         </div>

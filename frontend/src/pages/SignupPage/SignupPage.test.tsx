@@ -115,10 +115,10 @@ describe('SignupPage - Initial Render', () => {
     renderSignupPage();
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('ユーザー名を入力（3文字以上）')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('英字で始まる3文字以上（英数字と_のみ）')).toBeInTheDocument();
     });
     expect(screen.getByPlaceholderText('example@email.com')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('パスワードを入力（8文字以上）')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('8文字以上（英字と数字を含む）')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('パスワードを再入力')).toBeInTheDocument();
   });
 });
