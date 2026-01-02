@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { api, ApiError } from '../services/api';
-import type { LoginResponse } from '../types/api';
+import type { LoginResponse, SignupResponse } from '../types/api';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -22,6 +22,7 @@ interface AuthContextValue extends AuthState {
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  signup: (username: string, email: string, password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -210,14 +211,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const signup = useCallback(
+    async (username: string, email: string, password: string) => {
+      const data = await api.post<SignupResponse>('/auth/register', {
+        username,
+        email,
+        password,
+      });
+
+      const authData: StoredAuthData = {
+        userId: data.user.id,
+        username: data.user.username,
+      };
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
+
+      setState({
+        isAuthenticated: true,
+        userId: data.user.id,
+        username: data.user.username,
+        isLoading: false,
+      });
+    },
+    []
+  );
+
   const value = useMemo(
     () => ({
       ...state,
       login,
       logout,
       checkAuth,
+      signup,
     }),
-    [state, login, logout, checkAuth]
+    [state, login, logout, checkAuth, signup]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

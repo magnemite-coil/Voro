@@ -1,6 +1,6 @@
 // pages/LoginPage/LoginPage.tsx
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router';
+import { useNavigate, useLocation, Link } from 'react-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { Button } from '../../components/common/Button/Button';
@@ -81,7 +81,11 @@ export function LoginPage() {
             required
           />
         </div>
-        {error && <p className={styles.error}>{error}</p>}
+        {error && (
+          <p className={styles.error} role="alert">
+            {error}
+          </p>
+        )}
         <Button
           type="submit"
           variant="primary"
@@ -90,6 +94,13 @@ export function LoginPage() {
         >
           ログイン
         </Button>
+
+        <div className={styles.linkContainer}>
+          <span className={styles.linkText}>アカウントをお持ちでない方は</span>
+          <Link to="/signup" className={styles.link}>
+            サインアップ
+          </Link>
+        </div>
       </form>
     </div>
   );

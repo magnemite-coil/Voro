@@ -63,3 +63,24 @@
   margin-bottom: var(--spacing-md);
   text-shadow: 0 0 6px var(--danger);
 }
+
+.linkContainer {
+  text-align: center;
+  margin-top: var(--spacing-lg);
+}
+
+.linkText {
+  color: var(--text-secondary);
+  font-size: var(--font-size-label);
+}
+
+.link {
+  color: var(--neon-cyan);
+  text-decoration: none;
+  margin-left: var(--spacing-xs);
+}
+
+.link:hover {
+  text-decoration: underline;
+  text-shadow: var(--glow-cyan);
+}

@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { Toast } from './components/common/Toast/Toast';
 import { LoginPage } from './pages/LoginPage/LoginPage';
+import { SignupPage } from './pages/SignupPage/SignupPage';
 import { PostEditorPage } from './pages/PostEditorPage/PostEditorPage';
 import { ProtectedRoute } from './components/common/ProtectedRoute/ProtectedRoute';
 import styles from './App.module.css';
@@ -24,6 +25,10 @@ const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: '/signup',
+    element: <SignupPage />,
   },
   {
     path: '/posts/new',

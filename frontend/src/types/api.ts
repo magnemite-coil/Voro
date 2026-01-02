@@ -26,6 +26,13 @@ export interface LoginResponse {
   user: User;
 }
 
+// SignupResponse を独立した interface として追加
+// 現時点では LoginResponse と同一構造だが、将来的に拡張可能
+// （例: email 確認フラグ、ウェルカムメッセージ等の追加）
+export interface SignupResponse {
+  user: User;
+}
+
 export interface PostsResponse {
   posts: import('./post').Post[];
 }
