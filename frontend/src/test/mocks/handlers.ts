@@ -19,6 +19,21 @@ export const handlers = [
     });
   }),
 
+  // ユーザー登録（デフォルト: 成功）
+  http.post('/api/auth/register', async ({ request }) => {
+    const body = (await request.json()) as {
+      username: string;
+      email: string;
+      password: string;
+    };
+    return HttpResponse.json({
+      success: true,
+      data: {
+        user: { id: 1, username: body.username },
+      },
+    });
+  }),
+
   // ログアウト
   http.post('/api/auth/logout', () => {
     return HttpResponse.json({

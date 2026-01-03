@@ -1,0 +1,6 @@
+/* pages/SignupPage/SignupPage.module.css */
+/* SignupPage固有のスタイルのみ定義 */
+/* 共通スタイルはTSX側で auth-form.module.css から結合 */
+
+/* 現時点ではSignupPage固有のスタイルはなし */
+/* 将来的にSignupPage特有のカスタマイズが必要な場合にここに追加 */

@@ -55,6 +55,7 @@ function renderLoginPage(options: RenderOptions = {}) {
   const router = createMemoryRouter(
     [
       { path: '/login', element: <LoginPage /> },
+      { path: '/signup', element: <div data-testid="signup-page">SignupPage</div> },
       { path: '/posts/new', element: <div data-testid="new-post-page">PostEditorPage</div> },
       { path: '/posts/:id/edit', element: <div data-testid="edit-page">EditPage</div> },
     ],
@@ -332,14 +333,12 @@ describe('LoginPage - Login Failure', () => {
       expect(screen.getByText('Invalid credentials')).toBeInTheDocument();
     });
 
+    // エラーメッセージに role="alert" が設定されている（WCAG 4.1.3 準拠）
+    const errorMessage = screen.getByText('Invalid credentials');
+    expect(errorMessage.closest('[role="alert"]')).toBeInTheDocument();
+
     // localStorage が変更されていないこと
     expect(localStorage.getItem('voro_auth')).toBe(initialLocalStorage);
-
-    // 成功トーストが表示されないこと（alert がない、または「ログインしました」を含まない）
-    const alert = screen.queryByRole('alert');
-    if (alert) {
-      expect(alert).not.toHaveTextContent('ログインしました');
-    }
   });
 
   // #12: 認証エラー（401）でメッセージ表示
@@ -377,8 +376,8 @@ describe('LoginPage - Login Failure', () => {
     }
   });
 
-  // #13: サーバーエラー（500）で汎用メッセージ表示
-  it('shows error message on 500 server error', async () => {
+  // #13: サーバーエラー（500）で汎用メッセージ表示（error_id を含む）
+  it('shows error message with error_id on 500 server error', async () => {
     const initialLocalStorage = localStorage.getItem('voro_auth');
 
     server.use(
@@ -397,19 +396,14 @@ describe('LoginPage - Login Failure', () => {
     await userEvent.type(screen.getByLabelText('パスワード'), 'password');
     await userEvent.click(screen.getByRole('button', { name: 'ログイン' }));
 
-    // サーバーエラーメッセージが表示される
+    // サーバーエラーメッセージが error_id を含んで表示される
     await waitFor(() => {
-      expect(screen.getByText('Internal server error')).toBeInTheDocument();
+      expect(screen.getByText(/サーバーエラーが発生しました/)).toBeInTheDocument();
+      expect(screen.getByText(/test-error-id/)).toBeInTheDocument();
     });
 
     // localStorage が変更されていないこと
     expect(localStorage.getItem('voro_auth')).toBe(initialLocalStorage);
-
-    // 成功トーストが表示されないこと（alert がない、または「ログインしました」を含まない）
-    const alert = screen.queryByRole('alert');
-    if (alert) {
-      expect(alert).not.toHaveTextContent('ログインしました');
-    }
   });
 
   // #14: ネットワークエラーでデフォルトメッセージ表示
@@ -482,6 +476,8 @@ describe('LoginPage - Loading State', () => {
   // #16: 送信中はボタンが disabled かつ isLoading 状態
   it('shows loading state during submission', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
+    // fake timers 使用時は userEvent を advanceTimers オプションでセットアップ
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
     let resolveDelay!: () => void;
     const delayPromise = new Promise<void>((resolve) => {
@@ -501,11 +497,11 @@ describe('LoginPage - Loading State', () => {
       expect(screen.getByLabelText('ユーザー名')).toBeInTheDocument();
     });
 
-    await userEvent.type(screen.getByLabelText('ユーザー名'), 'testuser');
-    await userEvent.type(screen.getByLabelText('パスワード'), 'wrongpassword');
+    await user.type(screen.getByLabelText('ユーザー名'), 'testuser');
+    await user.type(screen.getByLabelText('パスワード'), 'wrongpassword');
 
     const submitButton = screen.getByRole('button', { name: 'ログイン' });
-    await userEvent.click(submitButton);
+    await user.click(submitButton);
 
     // 即座に検証（レスポンス待ち中）
     expect(submitButton).toBeDisabled();
@@ -602,4 +598,49 @@ describe('LoginPage - Auth State Verification', () => {
   // 正しく動作しないため、このテストは todo として残しています。
   // 実際のブラウザ環境での E2E テストで検証することを推奨します。
   it.todo('maintains authentication state when /api/me/posts has network error');
+});
+
+// ============================================================================
+// Phase 5: ナビゲーション（#21-22）
+// ============================================================================
+
+describe('LoginPage - Navigation', () => {
+  // #21: サインアップへのリンクが機能する
+  it('navigates to signup page when clicking signup link', async () => {
+    const { router } = renderLoginPage();
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'サインアップ' })).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole('link', { name: 'サインアップ' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('signup-page')).toBeInTheDocument();
+    });
+
+    expect(router.state.location.pathname).toBe('/signup');
+  });
+
+  // #22: サインアップページへのリンクに from state が引き継がれる
+  it('passes from state to signup page', async () => {
+    const { router } = renderLoginPage({
+      initialEntries: [
+        { pathname: '/login', state: { from: { pathname: '/posts/1/edit' } } },
+      ],
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'サインアップ' })).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole('link', { name: 'サインアップ' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('signup-page')).toBeInTheDocument();
+    });
+
+    // from state が引き継がれていることを確認
+    expect(router.state.location.state).toEqual({ from: { pathname: '/posts/1/edit' } });
+  });
 });

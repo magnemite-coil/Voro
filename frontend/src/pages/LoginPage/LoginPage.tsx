@@ -1,11 +1,11 @@
 // pages/LoginPage/LoginPage.tsx
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router';
+import { useNavigate, useLocation, Link } from 'react-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { Button } from '../../components/common/Button/Button';
-import { ApiError } from '../../services/api';
-import styles from './LoginPage.module.css';
+import { ApiError, formatErrorMessage } from '../../services/api';
+import authStyles from '../../styles/auth-form.module.css';
 
 export function LoginPage() {
   const { login, isAuthenticated } = useAuth();
@@ -27,6 +27,22 @@ export function LoginPage() {
     }
   }, [isAuthenticated, navigate, from]);
 
+  // ユーザー名変更時にエラーをクリア
+  const handleUsernameChange = (value: string) => {
+    setUsername(value);
+    if (error) {
+      setError(null);
+    }
+  };
+
+  // パスワード変更時にエラーをクリア
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    if (error) {
+      setError(null);
+    }
+  };
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -38,7 +54,8 @@ export function LoginPage() {
       navigate(from, { replace: true });
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.message);
+        // formatErrorMessage で 500 エラー時に error_id を含めて表示
+        setError(formatErrorMessage(err));
       } else {
         setError('ログインに失敗しました');
       }
@@ -48,40 +65,48 @@ export function LoginPage() {
   };
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.title}>ログイン</h1>
-      <form onSubmit={handleFormSubmit} className={styles.form}>
-        <div className={styles.formGroup}>
-          <label htmlFor="username" className={styles.label}>
+    <div className={authStyles.container}>
+      <h1 className={authStyles.title}>ログイン</h1>
+      <form onSubmit={handleFormSubmit} className={authStyles.form}>
+        <div className={authStyles.formGroup}>
+          <label htmlFor="username" className={authStyles.label}>
             ユーザー名
           </label>
           <input
             id="username"
             type="text"
-            className={styles.input}
+            className={authStyles.input}
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(e) => handleUsernameChange(e.target.value)}
             placeholder="ユーザー名を入力"
             autoComplete="username"
+            aria-describedby={error ? 'login-error' : undefined}
+            aria-invalid={!!error}
             required
           />
         </div>
-        <div className={styles.formGroup}>
-          <label htmlFor="password" className={styles.label}>
+        <div className={authStyles.formGroup}>
+          <label htmlFor="password" className={authStyles.label}>
             パスワード
           </label>
           <input
             id="password"
             type="password"
-            className={styles.input}
+            className={authStyles.input}
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => handlePasswordChange(e.target.value)}
             placeholder="パスワードを入力"
             autoComplete="current-password"
+            aria-describedby={error ? 'login-error' : undefined}
+            aria-invalid={!!error}
             required
           />
         </div>
-        {error && <p className={styles.error}>{error}</p>}
+        {error && (
+          <p id="login-error" className={authStyles.error} role="alert">
+            {error}
+          </p>
+        )}
         <Button
           type="submit"
           variant="primary"
@@ -90,6 +115,13 @@ export function LoginPage() {
         >
           ログイン
         </Button>
+
+        <div className={authStyles.linkContainer}>
+          <span className={authStyles.linkText}>アカウントをお持ちでない方は</span>
+          <Link to="/signup" state={{ from: { pathname: from } }} className={authStyles.link}>
+            サインアップ
+          </Link>
+        </div>
       </form>
     </div>
   );

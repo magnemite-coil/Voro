@@ -1,0 +1,136 @@
+/* styles/auth-form.module.css */
+/* 認証フォーム（ログイン・サインアップ）の共通スタイル */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--bg-primary);
+  padding: var(--spacing-lg);
+}
+
+.title {
+  color: var(--neon-yellow);
+  font-size: 2rem;
+  text-shadow: var(--glow-yellow);
+  margin-bottom: var(--spacing-xl);
+}
+
+.form {
+  width: 100%;
+  max-width: 400px;
+  background: var(--bg-secondary);
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+}
+
+.formGroup {
+  margin-bottom: var(--spacing-lg);
+}
+
+.label {
+  display: block;
+  color: var(--text-secondary);
+  font-size: var(--font-size-label);
+  margin-bottom: var(--spacing-xs);
+}
+
+.input {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--font-size-body);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input:focus {
+  border-color: var(--neon-cyan);
+  box-shadow: var(--shadow-cyan);
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+/* サーバーエラー（フォーム全体） */
+.error {
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin-bottom: var(--spacing-md);
+  text-shadow: 0 0 6px var(--danger);
+}
+
+/* フィールド単位エラー */
+.fieldError {
+  color: var(--danger);
+  font-size: 0.8rem;
+  margin-top: var(--spacing-xs);
+  text-shadow: 0 0 4px var(--danger);
+}
+
+/* パスワードフィールドラッパー */
+.passwordWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* パスワード表示トグルボタン */
+.toggleButton {
+  position: absolute;
+  right: var(--spacing-sm);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: var(--spacing-xs);
+  font-size: 1rem;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.toggleButton:hover {
+  color: var(--neon-cyan);
+}
+
+.toggleButton:focus {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* トグルボタンがある場合のinputのpadding調整 */
+/* 変数定義: トグルボタンの幅（font-size 1rem + 余白）*/
+.inputWithToggle {
+  --toggle-button-width: 1.5rem;
+  padding-right: calc(var(--spacing-md) + var(--toggle-button-width) + var(--spacing-sm));
+}
+
+/* ページ遷移リンク */
+.linkContainer {
+  text-align: center;
+  margin-top: var(--spacing-lg);
+}
+
+.linkText {
+  color: var(--text-secondary);
+  font-size: var(--font-size-label);
+}
+
+.link {
+  color: var(--neon-cyan);
+  text-decoration: none;
+  margin-left: var(--spacing-xs);
+}
+
+.link:hover {
+  text-decoration: underline;
+  text-shadow: var(--glow-cyan);
+}
