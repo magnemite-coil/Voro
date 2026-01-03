@@ -33,6 +33,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added tests for connection disconnect failure scenarios
   - Improved test documentation with Infrastructure layer exception notes
 
+### Added
+
+- **Signup page**: Complete user registration feature with accessibility support
+  - New signup form with username, email, password, and password confirmation fields
+  - Password visibility toggle with proper ARIA attributes
+  - Field-level error display with WCAG 2.2 compliance
+  - Shared auth form styles (`auth-form.module.css`) for LoginPage/SignupPage consistency
+  - 35 test cases covering all functionality phases
+  - Security: User enumeration prevention in backend error messages
+
+### Security
+
+- **User enumeration prevention**: Registration error messages generalized to prevent username discovery
+  - Backend returns generic "Registration failed. Please try again." instead of specific errors
+  - Detailed errors logged server-side for debugging
+
 ---
 
 ### Added - Model Post Branch Coverage Tests for 100% Coverage (model/post.lisp)
