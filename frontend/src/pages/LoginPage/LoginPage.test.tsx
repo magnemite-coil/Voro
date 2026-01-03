@@ -55,6 +55,7 @@ function renderLoginPage(options: RenderOptions = {}) {
   const router = createMemoryRouter(
     [
       { path: '/login', element: <LoginPage /> },
+      { path: '/signup', element: <div data-testid="signup-page">SignupPage</div> },
       { path: '/posts/new', element: <div data-testid="new-post-page">PostEditorPage</div> },
       { path: '/posts/:id/edit', element: <div data-testid="edit-page">EditPage</div> },
     ],
@@ -597,4 +598,49 @@ describe('LoginPage - Auth State Verification', () => {
   // 正しく動作しないため、このテストは todo として残しています。
   // 実際のブラウザ環境での E2E テストで検証することを推奨します。
   it.todo('maintains authentication state when /api/me/posts has network error');
+});
+
+// ============================================================================
+// Phase 5: ナビゲーション（#21-22）
+// ============================================================================
+
+describe('LoginPage - Navigation', () => {
+  // #21: サインアップへのリンクが機能する
+  it('navigates to signup page when clicking signup link', async () => {
+    const { router } = renderLoginPage();
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'サインアップ' })).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole('link', { name: 'サインアップ' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('signup-page')).toBeInTheDocument();
+    });
+
+    expect(router.state.location.pathname).toBe('/signup');
+  });
+
+  // #22: サインアップページへのリンクに from state が引き継がれる
+  it('passes from state to signup page', async () => {
+    const { router } = renderLoginPage({
+      initialEntries: [
+        { pathname: '/login', state: { from: { pathname: '/posts/1/edit' } } },
+      ],
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'サインアップ' })).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole('link', { name: 'サインアップ' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('signup-page')).toBeInTheDocument();
+    });
+
+    // from state が引き継がれていることを確認
+    expect(router.state.location.state).toEqual({ from: { pathname: '/posts/1/edit' } });
+  });
 });
