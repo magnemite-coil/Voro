@@ -87,7 +87,8 @@
             (assert-status 400 status)
 
             ;; エラーメッセージ確認
-            (ok (search "already exists" body))))))))
+            ;; Note: ユーザー列挙攻撃防止のため、一般的なエラーメッセージを返す
+            (ok (search "Registration failed" body))))))))
 
 (deftest auth-login-success-test
   (testing "POST /api/auth/login - ログイン成功"
