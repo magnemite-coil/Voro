@@ -18,8 +18,9 @@
    キャッシュ構成:
      .cache/
      ├── fasl/      - Common Lisp コンパイル済みファイル
-     ├── vite/      - Vite 開発サーバーキャッシュ
-     └── coverage/  - カバレッジレポート"
+     └── vite/      - Vite 開発サーバーキャッシュ
+
+   注: カバレッジレポートは coverage-report/ に出力されます"
   (let* ((project-root (uiop:getcwd))
          (cache-dir (merge-pathnames ".cache/fasl/" project-root)))
 

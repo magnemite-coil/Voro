@@ -14,7 +14,7 @@ help:
 	@echo "  make test-coverage   - Run tests with coverage report (Docker)"
 	@echo "  make test-coverage-local - Run tests with coverage report (local)"
 	@echo "  make clean           - Clean up Docker containers and volumes"
-	@echo "  make clean-cache     - Clear all project caches (FASL, Vite, coverage)"
+	@echo "  make clean-cache     - Clear all project caches (FASL, Vite)"
 	@echo "  make logs            - Show test runner logs"
 	@echo "  make shell-test      - Open shell in test runner container"
 	@echo "  make help            - Show this help message"
@@ -63,17 +63,18 @@ clean:
 	rm -rf var/tmp/*.log coverage-report/
 	@echo "Cleanup complete"
 
-# キャッシュクリア（FASL, Vite, coverage）
+# キャッシュクリア（FASL, Vite）
 clean-cache:
 	@echo "========== Clearing project caches =========="
 	rm -rf .cache/
-	@echo "Cleared: .cache/ (FASL, Vite, coverage)"
+	@echo "Cleared: .cache/ (FASL, Vite)"
 	@echo ""
 	@echo "Cache directory structure:"
 	@echo "  .cache/"
 	@echo "  ├── fasl/      - Common Lisp compiled files"
-	@echo "  ├── vite/      - Vite dev server cache"
-	@echo "  └── coverage/  - Coverage reports"
+	@echo "  └── vite/      - Vite dev server cache"
+	@echo ""
+	@echo "Note: Coverage reports are in coverage-report/ (use 'make clean' to remove)"
 	@echo ""
 	@echo "Cache cleared successfully"
 

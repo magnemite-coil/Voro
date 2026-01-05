@@ -2,16 +2,23 @@
 #
 # clean-cache.sh - プロジェクトのキャッシュをクリーンアップ
 #
-# このスクリプトは、プロジェクト内の _build/fasl/ ディレクトリを
+# このスクリプトは、プロジェクト内の .cache/ ディレクトリを
 # 安全に削除します。ホームディレクトリには一切触れません。
+#
+# キャッシュ構成:
+#   .cache/
+#   ├── fasl/  - Common Lisp コンパイル済みファイル
+#   └── vite/  - Vite 開発サーバーキャッシュ
 #
 # 使い方:
 #   ./scripts/clean-cache.sh
+#
+# 推奨: make clean-cache を使用してください
 
 set -e  # エラーが発生したら即座に終了
 
 PROJECT_DIR="/Users/key-person/projects/Voro"
-CACHE_DIR="${PROJECT_DIR}/_build/fasl"
+CACHE_DIR="${PROJECT_DIR}/.cache"
 
 echo "========================================="
 echo "  Voro Cache Cleanup"
@@ -55,12 +62,14 @@ if [ "$1" != "-y" ]; then
 fi
 
 # 削除実行（安全チェック付き）
-if [[ "$CACHE_DIR" == *"Voro"* ]] && [[ "$CACHE_DIR" == *"_build"* ]]; then
+if [[ "$CACHE_DIR" == *"Voro"* ]] && [[ "$CACHE_DIR" == *".cache"* ]]; then
   echo "🗑️  Removing cache directory..."
   rm -rf "$CACHE_DIR"
   echo "✅ Cache cleaned successfully!"
   echo ""
   echo "   Next run will regenerate the cache."
+  echo ""
+  echo "   Tip: Use 'make clean-cache' for convenience."
 else
   echo "❌ Error: Safety check failed!"
   echo "   Cache directory path does not look safe: $CACHE_DIR"
