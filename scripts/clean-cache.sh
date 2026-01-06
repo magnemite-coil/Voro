@@ -17,7 +17,11 @@
 
 set -e  # エラーが発生したら即座に終了
 
-PROJECT_DIR="/Users/key-person/projects/Voro"
+# プロジェクトディレクトリを動的に算出
+# 環境変数 VORO_PROJECT_DIR が設定されていればそれを使用
+# そうでなければスクリプトの位置から親ディレクトリを算出
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="${VORO_PROJECT_DIR:-$(dirname "$SCRIPT_DIR")}"
 CACHE_DIR="${PROJECT_DIR}/.cache"
 
 echo "========================================="

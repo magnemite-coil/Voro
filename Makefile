@@ -64,19 +64,9 @@ clean:
 	@echo "Cleanup complete"
 
 # キャッシュクリア（FASL, Vite）
+# scripts/clean-cache.sh に処理を委譲（-y オプションで確認なし）
 clean-cache:
-	@echo "========== Clearing project caches =========="
-	rm -rf .cache/
-	@echo "Cleared: .cache/ (FASL, Vite)"
-	@echo ""
-	@echo "Cache directory structure:"
-	@echo "  .cache/"
-	@echo "  ├── fasl/      - Common Lisp compiled files"
-	@echo "  └── vite/      - Vite dev server cache"
-	@echo ""
-	@echo "Note: Coverage reports are in coverage-report/ (use 'make clean' to remove)"
-	@echo ""
-	@echo "Cache cleared successfully"
+	@./scripts/clean-cache.sh -y
 
 # ログ表示
 logs:
