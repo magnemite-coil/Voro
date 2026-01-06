@@ -66,7 +66,21 @@ if [ "$1" != "-y" ]; then
 fi
 
 # 削除実行（安全チェック付き）
-if [[ "$CACHE_DIR" == *"Voro"* ]] && [[ "$CACHE_DIR" == *".cache"* ]]; then
+# 条件:
+#   1. CACHE_DIR が PROJECT_DIR/.cache と一致
+#   2. PROJECT_DIR に .git が存在（プロジェクトルートの確認）
+#   3. PROJECT_DIR がルート(/)やホームディレクトリでない
+safe_to_delete=false
+
+if [[ "$CACHE_DIR" == "$PROJECT_DIR/.cache" ]] && \
+   [[ -d "$PROJECT_DIR/.git" ]] && \
+   [[ "$PROJECT_DIR" != "/" ]] && \
+   [[ "$PROJECT_DIR" != "$HOME" ]] && \
+   [[ "$PROJECT_DIR" != "$HOME/" ]]; then
+  safe_to_delete=true
+fi
+
+if [[ "$safe_to_delete" == "true" ]]; then
   echo "🗑️  Removing cache directory..."
   rm -rf "$CACHE_DIR"
   echo "✅ Cache cleaned successfully!"
@@ -77,5 +91,10 @@ if [[ "$CACHE_DIR" == *"Voro"* ]] && [[ "$CACHE_DIR" == *".cache"* ]]; then
 else
   echo "❌ Error: Safety check failed!"
   echo "   Cache directory path does not look safe: $CACHE_DIR"
+  echo ""
+  echo "   Safety requirements:"
+  echo "   - CACHE_DIR must be PROJECT_DIR/.cache"
+  echo "   - PROJECT_DIR must contain .git directory"
+  echo "   - PROJECT_DIR must not be / or \$HOME"
   exit 1
 fi

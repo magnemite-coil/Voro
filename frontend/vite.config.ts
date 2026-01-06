@@ -1,3 +1,4 @@
+import * as path from 'path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -6,7 +7,8 @@ export default defineConfig({
   plugins: [react()],
   // キャッシュをプロジェクトルートの .cache/vite/ に集約
   // これにより rm -rf .cache/ で全キャッシュをクリア可能
-  cacheDir: '../.cache/vite',
+  // path.resolve で絶対パス化し、CWD に依存しないようにする
+  cacheDir: path.resolve(__dirname, '../.cache/vite'),
   server: {
     port: 5173,
     proxy: {
