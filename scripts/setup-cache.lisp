@@ -21,7 +21,10 @@
      └── vite/      - Vite 開発サーバーキャッシュ
 
    注: カバレッジレポートは coverage-report/ に出力されます"
-  (let* ((project-root (uiop:getcwd))
+  ;; *load-truename* からスクリプト位置を取得し、親ディレクトリをプロジェクトルートとする
+  ;; これにより CWD に依存せず、どこから実行しても正しく動作する
+  (let* ((script-dir (uiop:pathname-directory-pathname *load-truename*))
+         (project-root (uiop:pathname-parent-directory-pathname script-dir))
          (cache-dir (merge-pathnames ".cache/fasl/" project-root)))
 
     ;; キャッシュディレクトリが存在しない場合は作成

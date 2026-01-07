@@ -1,4 +1,4 @@
-import * as path from 'path'
+import { fileURLToPath } from 'url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -7,8 +7,8 @@ export default defineConfig({
   plugins: [react()],
   // キャッシュをプロジェクトルートの .cache/vite/ に集約
   // これにより rm -rf .cache/ で全キャッシュをクリア可能
-  // path.resolve で絶対パス化し、CWD に依存しないようにする
-  cacheDir: path.resolve(__dirname, '../.cache/vite'),
+  // ESM では __dirname が使えないため、import.meta.url から導出
+  cacheDir: fileURLToPath(new URL('../.cache/vite', import.meta.url)),
   server: {
     port: 5173,
     proxy: {
