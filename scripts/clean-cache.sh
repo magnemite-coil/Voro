@@ -68,12 +68,18 @@ fi
 # 削除実行（安全チェック付き）
 # 条件:
 #   1. CACHE_DIR が PROJECT_DIR/.cache と一致
-#   2. PROJECT_DIR に .git が存在（プロジェクトルートの確認）
+#   2. PROJECT_DIR が Git ワークツリー内（worktree/submodule 対応）
 #   3. PROJECT_DIR がルート(/)やホームディレクトリでない
 safe_to_delete=false
 
+# Git ワークツリー判定（worktree/submodule では .git がファイルになるため rev-parse を使用）
+is_git_worktree=false
+if git -C "$PROJECT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  is_git_worktree=true
+fi
+
 if [[ "$CACHE_DIR" == "$PROJECT_DIR/.cache" ]] && \
-   [[ -d "$PROJECT_DIR/.git" ]] && \
+   [[ "$is_git_worktree" == "true" ]] && \
    [[ "$PROJECT_DIR" != "/" ]] && \
    [[ "$PROJECT_DIR" != "$HOME" ]] && \
    [[ "$PROJECT_DIR" != "$HOME/" ]]; then
@@ -94,7 +100,7 @@ else
   echo ""
   echo "   Safety requirements:"
   echo "   - CACHE_DIR must be PROJECT_DIR/.cache"
-  echo "   - PROJECT_DIR must contain .git directory"
+  echo "   - PROJECT_DIR must be inside a Git work tree"
   echo "   - PROJECT_DIR must not be / or \$HOME"
   exit 1
 fi
