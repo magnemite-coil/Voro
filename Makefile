@@ -1,4 +1,4 @@
-.PHONY: test test-backend test-watch test-coverage test-coverage-local clean logs shell-test help
+.PHONY: test test-backend test-watch test-coverage test-coverage-local clean clean-cache logs shell-test help
 
 # デフォルトターゲット
 .DEFAULT_GOAL := help
@@ -14,6 +14,7 @@ help:
 	@echo "  make test-coverage   - Run tests with coverage report (Docker)"
 	@echo "  make test-coverage-local - Run tests with coverage report (local)"
 	@echo "  make clean           - Clean up Docker containers and volumes"
+	@echo "  make clean-cache     - Clear all project caches (FASL, Vite)"
 	@echo "  make logs            - Show test runner logs"
 	@echo "  make shell-test      - Open shell in test runner container"
 	@echo "  make help            - Show this help message"
@@ -61,6 +62,11 @@ clean:
 	docker compose -f docker-compose.test.yml down -v --remove-orphans
 	rm -rf var/tmp/*.log coverage-report/
 	@echo "Cleanup complete"
+
+# キャッシュクリア（FASL, Vite）
+# scripts/clean-cache.sh に処理を委譲（-y オプションで確認なし）
+clean-cache:
+	@./scripts/clean-cache.sh -y
 
 # ログ表示
 logs:

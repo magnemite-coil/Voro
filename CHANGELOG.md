@@ -2157,9 +2157,9 @@ Investigation into whether email addresses can always be obtained via Google OAu
 #### FASL Cache Management
 - **Project-local cache system**: No more `~/.cache` pollution
   - Added `scripts/setup-cache.lisp` for automatic cache configuration
-  - Cache location: `_build/fasl/` (gitignored)
+  - Cache location: `.cache/fasl/` (gitignored)
   - Prevents stale FASL issues between code changes
-- **Cache cleanup script**: Safe, project-scoped cleanup
+- **Cache cleanup**: Use `make clean-cache` to clear all project caches
   - Added `scripts/clean-cache.sh` with safety checks
   - Automatic cache size reporting
   - Confirmation prompt (override with `-y` flag)

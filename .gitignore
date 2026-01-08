@@ -9,6 +9,9 @@
 *.tmp
 _build/
 
+# Project-local cache directory (FASL, Vite)
+.cache/
+
 # Language - ASDF system files
 *.asd~
 

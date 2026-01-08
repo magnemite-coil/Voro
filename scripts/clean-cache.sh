@@ -1,17 +1,28 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # clean-cache.sh - プロジェクトのキャッシュをクリーンアップ
 #
-# このスクリプトは、プロジェクト内の _build/fasl/ ディレクトリを
+# このスクリプトは、プロジェクト内の .cache/ ディレクトリを
 # 安全に削除します。ホームディレクトリには一切触れません。
+#
+# キャッシュ構成:
+#   .cache/
+#   ├── fasl/  - Common Lisp コンパイル済みファイル
+#   └── vite/  - Vite 開発サーバーキャッシュ
 #
 # 使い方:
 #   ./scripts/clean-cache.sh
+#
+# 推奨: make clean-cache を使用してください
 
 set -e  # エラーが発生したら即座に終了
 
-PROJECT_DIR="/Users/key-person/projects/Voro"
-CACHE_DIR="${PROJECT_DIR}/_build/fasl"
+# プロジェクトディレクトリを動的に算出
+# 環境変数 VORO_PROJECT_DIR が設定されていればそれを使用
+# そうでなければスクリプトの位置から親ディレクトリを算出
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="${VORO_PROJECT_DIR:-$(dirname "$SCRIPT_DIR")}"
+CACHE_DIR="${PROJECT_DIR}/.cache"
 
 echo "========================================="
 echo "  Voro Cache Cleanup"
@@ -55,14 +66,41 @@ if [ "$1" != "-y" ]; then
 fi
 
 # 削除実行（安全チェック付き）
-if [[ "$CACHE_DIR" == *"Voro"* ]] && [[ "$CACHE_DIR" == *"_build"* ]]; then
+# 条件:
+#   1. CACHE_DIR が PROJECT_DIR/.cache と一致
+#   2. PROJECT_DIR が Git ワークツリー内（worktree/submodule 対応）
+#   3. PROJECT_DIR がルート(/)やホームディレクトリでない
+safe_to_delete=false
+
+# Git ワークツリー判定（worktree/submodule では .git がファイルになるため rev-parse を使用）
+is_git_worktree=false
+if git -C "$PROJECT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  is_git_worktree=true
+fi
+
+if [[ "$CACHE_DIR" == "$PROJECT_DIR/.cache" ]] && \
+   [[ "$is_git_worktree" == "true" ]] && \
+   [[ "$PROJECT_DIR" != "/" ]] && \
+   [[ "$PROJECT_DIR" != "$HOME" ]] && \
+   [[ "$PROJECT_DIR" != "$HOME/" ]]; then
+  safe_to_delete=true
+fi
+
+if [[ "$safe_to_delete" == "true" ]]; then
   echo "🗑️  Removing cache directory..."
   rm -rf "$CACHE_DIR"
   echo "✅ Cache cleaned successfully!"
   echo ""
   echo "   Next run will regenerate the cache."
+  echo ""
+  echo "   Tip: Use 'make clean-cache' for convenience."
 else
   echo "❌ Error: Safety check failed!"
   echo "   Cache directory path does not look safe: $CACHE_DIR"
+  echo ""
+  echo "   Safety requirements:"
+  echo "   - CACHE_DIR must be PROJECT_DIR/.cache"
+  echo "   - PROJECT_DIR must be inside a Git work tree"
+  echo "   - PROJECT_DIR must not be / or \$HOME"
   exit 1
 fi
