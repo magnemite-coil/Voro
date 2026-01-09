@@ -203,7 +203,7 @@ export function SignupPage() {
         // フィールド別に分類して該当箇所に表示
         setFieldErrors(categorizeError(formatErrorMessage(err)));
       } else {
-        setFieldErrors({ general: 'アカウントの作成に失敗しました' });
+        setFieldErrors({ general: 'Failed to create account' });
       }
     } finally {
       setIsLoading(false);
@@ -213,7 +213,7 @@ export function SignupPage() {
   return (
     <div className={authStyles.container}>
       <h1 className={authStyles.title}>サインアップ</h1>
-      <form onSubmit={handleFormSubmit} className={authStyles.form}>
+      <form onSubmit={handleFormSubmit} className={authStyles.form} noValidate>
         <div className={authStyles.formGroup}>
           <label htmlFor="username" className={authStyles.label}>
             ユーザー名
@@ -353,7 +353,7 @@ export function SignupPage() {
               className={authStyles.fieldError}
               aria-live="polite"
             >
-              パスワードが一致しません
+              Passwords do not match
             </p>
           )}
         </div>
