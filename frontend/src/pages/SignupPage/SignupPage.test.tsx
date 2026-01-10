@@ -224,7 +224,7 @@ describe('SignupPage - Password Mismatch Check', () => {
     await userEvent.type(screen.getByLabelText('パスワード（確認）'), 'different456');
     await userEvent.tab(); // フォーカスアウト
 
-    expect(screen.getByText('パスワードが一致しません')).toBeInTheDocument();
+    expect(screen.getByText('Passwords do not match')).toBeInTheDocument();
   });
 
   // #10: パスワードが一致している場合はエラー非表示
@@ -239,7 +239,7 @@ describe('SignupPage - Password Mismatch Check', () => {
     await userEvent.type(screen.getByLabelText('パスワード（確認）'), 'password123');
     await userEvent.tab(); // フォーカスアウト
 
-    expect(screen.queryByText('パスワードが一致しません')).not.toBeInTheDocument();
+    expect(screen.queryByText('Passwords do not match')).not.toBeInTheDocument();
   });
 
   // #11: エラー表示後、パスワードを修正するとエラーがクリア
@@ -257,13 +257,13 @@ describe('SignupPage - Password Mismatch Check', () => {
     await userEvent.type(passwordInput, 'password123');
     await userEvent.type(confirmPasswordInput, 'different456');
     await userEvent.tab();
-    expect(screen.getByText('パスワードが一致しません')).toBeInTheDocument();
+    expect(screen.getByText('Passwords do not match')).toBeInTheDocument();
 
     // パスワードを修正
     await userEvent.clear(passwordInput);
     await userEvent.type(passwordInput, 'different456');
 
-    expect(screen.queryByText('パスワードが一致しません')).not.toBeInTheDocument();
+    expect(screen.queryByText('Passwords do not match')).not.toBeInTheDocument();
   });
 
   // #12: エラー表示後、確認パスワードを修正するとエラーがクリア
@@ -281,13 +281,13 @@ describe('SignupPage - Password Mismatch Check', () => {
     await userEvent.type(passwordInput, 'password123');
     await userEvent.type(confirmPasswordInput, 'different456');
     await userEvent.tab();
-    expect(screen.getByText('パスワードが一致しません')).toBeInTheDocument();
+    expect(screen.getByText('Passwords do not match')).toBeInTheDocument();
 
     // 確認パスワードを修正
     await userEvent.clear(confirmPasswordInput);
     await userEvent.type(confirmPasswordInput, 'password123');
 
-    expect(screen.queryByText('パスワードが一致しません')).not.toBeInTheDocument();
+    expect(screen.queryByText('Passwords do not match')).not.toBeInTheDocument();
   });
 });
 
@@ -543,7 +543,7 @@ describe('SignupPage - Signup Failure', () => {
     // タブを押さずに直接送信
     await userEvent.click(screen.getByRole('button', { name: 'サインアップ' }));
 
-    expect(screen.getByText('パスワードが一致しません')).toBeInTheDocument();
+    expect(screen.getByText('Passwords do not match')).toBeInTheDocument();
   });
 });
 
@@ -857,7 +857,7 @@ describe('SignupPage - Accessibility', () => {
 
     expect(screen.getByLabelText('パスワード（確認）')).toHaveAttribute('aria-describedby', 'confirmPassword-error');
 
-    const errorMessage = screen.getByText('パスワードが一致しません');
+    const errorMessage = screen.getByText('Passwords do not match');
     expect(errorMessage).toBeInTheDocument();
     expect(errorMessage).toHaveAttribute('aria-live', 'polite');
   });
