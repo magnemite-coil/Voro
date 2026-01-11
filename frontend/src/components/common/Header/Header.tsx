@@ -25,12 +25,12 @@ export function Header({ actions, activeTab = 'new', onNewPostClick }: HeaderPro
           Voro
         </Link>
         <nav className={styles.nav}>
-          <span
-            className={clsx(styles.navTab, styles.disabled)}
-            aria-disabled="true"
+          <Link
+            to="/posts"
+            className={clsx(styles.navTab, activeTab === 'posts' && styles.active)}
           >
             記事一覧
-          </span>
+          </Link>
           <Link
             to="/posts/new"
             className={clsx(styles.navTab, activeTab === 'new' && styles.active)}

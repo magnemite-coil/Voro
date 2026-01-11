@@ -9,7 +9,8 @@
                 :delete-post
                 :list-published-posts
                 :list-user-posts
-                :list-my-posts)
+                :list-my-posts
+                :get-user-post-stats)
   (:import-from :voro.model.post
                 :post-to-alist)
   (:import-from :voro.model.user
@@ -217,6 +218,20 @@
               (error (e)
                 (let ((error-id (log-error "Failed to list user posts" :error e)))
                   (response-error 500 "Internal server error" :error-id error-id))))))))
+
+;; 自分の投稿統計
+(defroute (*app* "/api/me/posts/stats" :method :GET) ()
+  (let ((user-id (get-current-user-id *request*)))
+    (if (not user-id)
+        (response-error 401 "Authentication required")
+
+        (handler-case
+            (let ((stats (get-user-post-stats user-id)))
+              (response-success (list (cons :|stats| stats))))
+
+          (error (e)
+            (let ((error-id (log-error "Failed to get post stats" :error e)))
+              (response-error 500 "Internal server error" :error-id error-id)))))))
 
 ;; 自分の投稿一覧
 (defroute (*app* "/api/me/posts" :method :GET) ()

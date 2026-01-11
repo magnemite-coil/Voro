@@ -137,7 +137,8 @@
         :depends-on ("setup" "fixtures" "http-helper" "helper")
         :components (
           (:file "auth-test")
-          (:file "post-test")))
+          (:file "post-test")
+          (:file "post-stats-test")))
        (:file "web-test" :depends-on ("setup"))
        (:file "main-test" :depends-on ("setup" "fixtures")))))
   :perform (test-op (o c) (symbol-call :rove :run c)))

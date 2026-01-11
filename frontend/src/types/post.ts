@@ -23,3 +23,14 @@ export interface UpdatePostData {
   content?: string;
   published?: boolean;
 }
+
+// 一覧取得レスポンス（ページネーション付き）
+export interface PostListResponse {
+  posts: Post[];
+  pagination: import('./api').Pagination;
+}
+
+// 統計取得レスポンス
+export interface PostStatsResponse {
+  stats: import('./api').PostStats;
+}

@@ -12,6 +12,7 @@
                 :find-published-posts
                 :count-published-posts
                 :count-user-posts
+                :count-user-posts-this-month
                 :create-post)
   (:import-from :voro.util.log
                 :log-info
@@ -27,7 +28,8 @@
    :delete-post
    :list-published-posts
    :list-user-posts
-   :list-my-posts))
+   :list-my-posts
+   :get-user-post-stats))
 
 (in-package :voro.service.post)
 
@@ -199,3 +201,15 @@
                     (cons :|per_page| norm-per-page)
                     (cons :|total_count| total)
                     (cons :|total_pages| (if (zerop total) 0 (ceiling total norm-per-page))))))))
+
+(defun get-user-post-stats (user-id)
+  "ユーザーの投稿統計を取得
+   戻り値: alist形式の統計情報
+     - total: 全投稿数
+     - published: 公開中の投稿数
+     - draft: 下書きの投稿数
+     - this_month: 今月作成された投稿数"
+  (list (cons :|total| (count-user-posts user-id :published :all))
+        (cons :|published| (count-user-posts user-id :published t))
+        (cons :|draft| (count-user-posts user-id :published nil))
+        (cons :|this_month| (count-user-posts-this-month user-id))))
