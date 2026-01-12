@@ -1,6 +1,6 @@
 // hooks/usePosts.test.ts
 import { renderHook, waitFor, act } from '@testing-library/react';
-import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { createElement } from 'react';
