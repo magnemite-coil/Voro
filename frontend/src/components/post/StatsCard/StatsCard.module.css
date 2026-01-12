@@ -1,0 +1,30 @@
+/* components/post/StatsCard/StatsCard.module.css */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-secondary);
+  padding: 25px;
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--neon-cyan);
+  box-shadow: var(--shadow-cyan);
+  transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-cyan-strong);
+}
+
+.label {
+  font-size: 0.9rem;
+  color: var(--neon-pink);
+  text-shadow: var(--glow-pink);
+  margin-bottom: 10px;
+}
+
+.value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 10px var(--neon-cyan);
+}

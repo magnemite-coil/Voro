@@ -1,0 +1,163 @@
+/* components/post/PostTable/PostTable.module.css */
+
+.tableContainer {
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--neon-cyan);
+  box-shadow: 0 0 15px rgba(54, 249, 246, 0.2);
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* ヘッダー行 */
+.headerRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 120px;
+  gap: 20px;
+  padding: 20px 25px;
+  background-color: var(--bg-tertiary);
+}
+
+.headerCell {
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--neon-cyan);
+  text-align: left;
+}
+
+/* データ行 */
+.row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 120px;
+  gap: 20px;
+  padding: 20px 25px;
+  border-top: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.row:hover {
+  background-color: var(--bg-hover);
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+}
+
+/* タイトル */
+.title {
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 日付 */
+.date {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* ステータスバッジ共通 */
+.badgePublished,
+.badgeDraft {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* 公開中バッジ */
+.badgePublished {
+  background: rgba(114, 241, 184, 0.2);
+  color: var(--neon-green);
+  border: 1px solid var(--neon-green);
+  box-shadow: 0 0 8px rgba(114, 241, 184, 0.3);
+}
+
+/* 下書きバッジ */
+.badgeDraft {
+  background: rgba(254, 222, 93, 0.2);
+  color: var(--neon-yellow);
+  border: 1px solid var(--neon-yellow);
+  box-shadow: 0 0 8px rgba(254, 222, 93, 0.3);
+}
+
+/* アクションボタン */
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.editButton,
+.deleteButton {
+  padding: 5px 10px;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* 編集ボタン */
+.editButton {
+  border: 1px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  text-shadow: 0 0 6px var(--neon-cyan);
+}
+
+.editButton:hover {
+  background: rgba(54, 249, 246, 0.1);
+  box-shadow: 0 0 10px rgba(54, 249, 246, 0.3);
+}
+
+/* 削除ボタン */
+.deleteButton {
+  border: 1px solid var(--danger-light);
+  color: var(--danger-light);
+  text-shadow: var(--glow-danger-light);
+  box-shadow: var(--shadow-danger-light);
+}
+
+.deleteButton:hover {
+  background: rgba(255, 107, 122, 0.1);
+  box-shadow: 0 0 18px rgba(255, 107, 122, 0.5);
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .headerRow,
+  .row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .headerRow {
+    display: none;
+  }
+
+  .cell {
+    padding: 5px 0;
+  }
+
+  .cell::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--neon-cyan);
+    margin-right: 10px;
+    min-width: 80px;
+  }
+
+  .actions {
+    justify-content: flex-start;
+  }
+}

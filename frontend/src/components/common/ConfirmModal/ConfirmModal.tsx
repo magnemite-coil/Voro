@@ -9,6 +9,7 @@ interface ConfirmModalProps {
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  isConfirmLoading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -19,6 +20,7 @@ export function ConfirmModal({
   message,
   confirmLabel = '離れる',
   cancelLabel = 'キャンセル',
+  isConfirmLoading = false,
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
@@ -57,7 +59,10 @@ export function ConfirmModal({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onCancel();
+        // ローディング中はEscapeキーを無効化
+        if (!isConfirmLoading) {
+          onCancel();
+        }
         return;
       }
 
@@ -87,12 +92,19 @@ export function ConfirmModal({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onCancel]);
+  }, [isOpen, isConfirmLoading, onCancel]);
 
   if (!isOpen) return null;
 
+  const handleOverlayClick = () => {
+    // ローディング中はオーバーレイクリックを無効化
+    if (!isConfirmLoading) {
+      onCancel();
+    }
+  };
+
   return (
-    <div className={styles.overlay} onClick={onCancel}>
+    <div className={styles.overlay} onClick={handleOverlayClick}>
       <div
         ref={modalRef}
         className={styles.modal}
@@ -109,10 +121,19 @@ export function ConfirmModal({
           {message}
         </p>
         <div className={styles.actions}>
-          <Button ref={cancelButtonRef} variant="secondary" onClick={onCancel}>
+          <Button
+            ref={cancelButtonRef}
+            variant="secondary"
+            onClick={onCancel}
+            disabled={isConfirmLoading}
+          >
             {cancelLabel}
           </Button>
-          <Button variant="danger" onClick={onConfirm}>
+          <Button
+            variant="danger"
+            onClick={onConfirm}
+            isLoading={isConfirmLoading}
+          >
             {confirmLabel}
           </Button>
         </div>
