@@ -5,7 +5,8 @@
                 :with-test-db)
   (:import-from :voro.test.http-helper
                 :with-test-server
-                :http-get)
+                :http-get
+                :assert-status)
   (:import-from :voro.test.fixtures
                 :create-test-user
                 :create-test-session
@@ -21,9 +22,19 @@
                 :timestamp-year
                 :encode-timestamp
                 :timestamp-
-                :+utc-zone+))
+                :+utc-zone+)
+  (:local-nicknames (:jzon :com.inuoe.jzon)))
 
 (in-package :voro.test.handler.post-stats)
+
+;;; ヘルパー関数
+
+(defun get-stats-from-body (body)
+  "JSON文字列のbodyからstatsハッシュテーブルを取得"
+  (let* ((parsed (jzon:parse body))
+         (data (gethash "data" parsed))
+         (stats (gethash "stats" data)))
+    stats))
 
 ;;; GET /api/me/posts/stats - 投稿統計
 
@@ -42,13 +53,12 @@
             (multiple-value-bind (body status)
                 (http-get "/api/me/posts/stats"
                          :cookies (list (cons "session_id" session-id)))
-              (ok (= status 200))
+              (assert-status 200 status)
               ;; レスポンス構造: { data: { stats: { total, published, draft, this_month } } }
-              (let* ((data (cdr (assoc :|data| body)))
-                     (stats (cdr (assoc :|stats| data))))
-                (ok (= (cdr (assoc :|total| stats)) 3))
-                (ok (= (cdr (assoc :|published| stats)) 2))
-                (ok (= (cdr (assoc :|draft| stats)) 1))))))))))
+              (let ((stats (get-stats-from-body body)))
+                (ok (= (gethash "total" stats) 3))
+                (ok (= (gethash "published" stats) 2))
+                (ok (= (gethash "draft" stats) 1))))))))))
 
 (deftest test-get-post-stats-unauthorized
   (testing "未認証で401エラー"
@@ -58,7 +68,7 @@
           (multiple-value-bind (body status)
               (http-get "/api/me/posts/stats")
             (declare (ignore body))
-            (ok (= status 401))))))))
+            (assert-status 401 status)))))))
 
 (deftest test-get-post-stats-empty
   (testing "投稿がない場合は全て0を返す"
@@ -70,13 +80,12 @@
             (multiple-value-bind (body status)
                 (http-get "/api/me/posts/stats"
                          :cookies (list (cons "session_id" session-id)))
-              (ok (= status 200))
-              (let* ((data (cdr (assoc :|data| body)))
-                     (stats (cdr (assoc :|stats| data))))
-                (ok (= (cdr (assoc :|total| stats)) 0))
-                (ok (= (cdr (assoc :|published| stats)) 0))
-                (ok (= (cdr (assoc :|draft| stats)) 0))
-                (ok (= (cdr (assoc :|this_month| stats)) 0))))))))))
+              (assert-status 200 status)
+              (let ((stats (get-stats-from-body body)))
+                (ok (= (gethash "total" stats) 0))
+                (ok (= (gethash "published" stats) 0))
+                (ok (= (gethash "draft" stats) 0))
+                (ok (= (gethash "this_month" stats) 0))))))))))
 
 (deftest test-get-post-stats-this-month
   (testing "今月の投稿のみカウントされる"
@@ -108,11 +117,10 @@
             (multiple-value-bind (body status)
                 (http-get "/api/me/posts/stats"
                          :cookies (list (cons "session_id" session-id)))
-              (ok (= status 200))
-              (let* ((data (cdr (assoc :|data| body)))
-                     (stats (cdr (assoc :|stats| data))))
-                (ok (= (cdr (assoc :|total| stats)) 2))       ;; 全投稿数
-                (ok (= (cdr (assoc :|this_month| stats)) 1))  ;; 今月の投稿のみ
+              (assert-status 200 status)
+              (let ((stats (get-stats-from-body body)))
+                (ok (= (gethash "total" stats) 2))       ;; 全投稿数
+                (ok (= (gethash "this_month" stats) 1))  ;; 今月の投稿のみ
                 ))))))))
 
 (deftest test-get-post-stats-month-boundary
@@ -147,9 +155,8 @@
             (multiple-value-bind (body status)
                 (http-get "/api/me/posts/stats"
                          :cookies (list (cons "session_id" session-id)))
-              (ok (= status 200))
-              (let* ((data (cdr (assoc :|data| body)))
-                     (stats (cdr (assoc :|stats| data))))
-                (ok (= (cdr (assoc :|total| stats)) 2))
-                (ok (= (cdr (assoc :|this_month| stats)) 1))  ;; 月初の投稿のみ
+              (assert-status 200 status)
+              (let ((stats (get-stats-from-body body)))
+                (ok (= (gethash "total" stats) 2))
+                (ok (= (gethash "this_month" stats) 1))  ;; 月初の投稿のみ
                 ))))))))
