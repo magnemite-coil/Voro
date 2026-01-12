@@ -56,7 +56,6 @@ export function Pagination({
         className={styles.navButton}
         onClick={() => onPageChange(currentPage - 1)}
         disabled={disabled || currentPage <= 1}
-        aria-disabled={disabled || currentPage <= 1}
         aria-label="前のページへ"
       >
         ← 前へ
@@ -77,7 +76,6 @@ export function Pagination({
               })}
               onClick={() => onPageChange(page)}
               disabled={disabled || page === currentPage}
-              aria-disabled={disabled || page === currentPage}
               aria-current={page === currentPage ? 'page' : undefined}
             >
               {page}
@@ -91,7 +89,6 @@ export function Pagination({
         className={styles.navButton}
         onClick={() => onPageChange(currentPage + 1)}
         disabled={disabled || currentPage >= totalPages}
-        aria-disabled={disabled || currentPage >= totalPages}
         aria-label="次のページへ"
       >
         次へ →

@@ -304,6 +304,67 @@ describe('ConfirmModal - Accessibility', () => {
 });
 
 // =============================================================================
+// Phase 5a: isConfirmLoading（CM-LOAD-1〜CM-LOAD-5）
+// =============================================================================
+describe('ConfirmModal - Loading State', () => {
+  it('shows spinner on confirm button when isConfirmLoading is true (CM-LOAD-1)', () => {
+    renderConfirmModal({ isConfirmLoading: true });
+
+    // Button コンポーネントの isLoading=true により、Spinner が表示される
+    // Spinner は aria-label="読み込み中" を持つ span 要素
+    const spinner = screen.getByLabelText('読み込み中');
+    expect(spinner).toBeInTheDocument();
+  });
+
+  it('disables both buttons when isConfirmLoading is true (CM-LOAD-2)', () => {
+    renderConfirmModal({ isConfirmLoading: true });
+
+    // キャンセルボタンが disabled
+    const cancelButton = screen.getByRole('button', { name: 'キャンセル' });
+    expect(cancelButton).toBeDisabled();
+
+    // 確認ボタンも disabled（isLoading=true により、ボタン名は「読み込み中」になる）
+    const confirmButton = screen.getByRole('button', { name: '読み込み中' });
+    expect(confirmButton).toBeDisabled();
+  });
+
+  it('does not call onCancel when Escape is pressed during loading (CM-LOAD-3)', async () => {
+    const user = userEvent.setup();
+    const { props } = renderConfirmModal({ isConfirmLoading: true });
+
+    await user.keyboard('{Escape}');
+
+    expect(props.onCancel).not.toHaveBeenCalled();
+  });
+
+  it('does not call onCancel when overlay is clicked during loading (CM-LOAD-4)', async () => {
+    const user = userEvent.setup();
+    const { props } = renderConfirmModal({ isConfirmLoading: true });
+
+    const dialog = screen.getByRole('dialog');
+    const overlay = dialog.parentElement!;
+    await user.click(overlay);
+
+    expect(props.onCancel).not.toHaveBeenCalled();
+  });
+
+  it('has backward compatibility when isConfirmLoading is not specified (CM-LOAD-5)', () => {
+    // isConfirmLoading を指定しない場合、デフォルトで false として動作
+    renderConfirmModal();
+
+    const cancelButton = screen.getByRole('button', { name: 'キャンセル' });
+    const confirmButton = screen.getByRole('button', { name: '離れる' });
+
+    // 両方のボタンが有効
+    expect(cancelButton).not.toBeDisabled();
+    expect(confirmButton).not.toBeDisabled();
+
+    // Spinner が表示されていない
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+});
+
+// =============================================================================
 // Phase 5: スクロールロック（CM-14〜CM-15, CM-20）
 // =============================================================================
 describe('ConfirmModal - Scroll Lock', () => {

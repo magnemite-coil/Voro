@@ -39,10 +39,10 @@ export function PostTable({ posts, onEdit, onDelete }: PostTableProps) {
               className={styles.row}
               onClick={() => onEdit(post.id)}
             >
-              <td className={styles.cell}>
+              <td className={styles.cell} data-label="タイトル">
                 <span className={styles.title}>{post.title}</span>
               </td>
-              <td className={styles.cell}>
+              <td className={styles.cell} data-label="ステータス">
                 <span
                   className={
                     post.published ? styles.badgePublished : styles.badgeDraft
@@ -51,12 +51,12 @@ export function PostTable({ posts, onEdit, onDelete }: PostTableProps) {
                   {post.published ? '公開中' : '下書き'}
                 </span>
               </td>
-              <td className={styles.cell}>
+              <td className={styles.cell} data-label="作成日">
                 <span className={styles.date}>
                   {formatDate(post.created_at)}
                 </span>
               </td>
-              <td className={styles.cell}>
+              <td className={styles.cell} data-label="操作">
                 <div className={styles.actions}>
                   <button
                     type="button"
@@ -75,6 +75,7 @@ export function PostTable({ posts, onEdit, onDelete }: PostTableProps) {
                       e.stopPropagation();
                       onDelete(post);
                     }}
+                    aria-label={`「${post.title}」を削除`}
                   >
                     削除
                   </button>
