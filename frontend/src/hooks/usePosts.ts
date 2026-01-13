@@ -27,7 +27,7 @@ export function usePosts(): UsePostsReturn {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { showNotification } = useNotification();
-  const page = Number(searchParams.get('page')) || 1;
+  const page = Math.max(1, Number(searchParams.get('page')) || 1);
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);

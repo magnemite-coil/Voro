@@ -41,6 +41,7 @@ export function PostListPage() {
       prev.set('page', String(newPage));
       return prev;
     });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleEdit = (id: number) => {
@@ -152,6 +153,11 @@ export function PostListPage() {
               <Link to="/posts/new" className={styles.createLink}>
                 最初の記事を作成する
               </Link>
+            </div>
+          ) : isLoading && pagination ? (
+            <div className={styles.tableLoadingContainer}>
+              <div className={styles.spinner} />
+              <p>読み込み中...</p>
             </div>
           ) : (
             <>

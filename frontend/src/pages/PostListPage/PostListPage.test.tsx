@@ -366,6 +366,68 @@ describe('PostListPage - Error Handling', () => {
 // 空状態テスト
 // ===================================================================
 describe('PostListPage - Empty State', () => {
+  it('redirects to last valid page when accessing non-existent page', async () => {
+    // ?page=999 でアクセスすると、存在するページ（3ページ）へリダイレクト
+    server.use(
+      http.get('/api/me/posts', ({ request }) => {
+        const url = new URL(request.url);
+        const page = Number(url.searchParams.get('page')) || 1;
+
+        // page=999 の場合は空の posts を返すが、total_count > 0
+        if (page > 3) {
+          return HttpResponse.json({
+            success: true,
+            data: {
+              posts: [],
+              pagination: {
+                page: page,
+                per_page: 20,
+                total_count: 42,
+                total_pages: 3,
+              },
+            },
+          });
+        }
+
+        // 通常のレスポンス（page 1-3）
+        return HttpResponse.json({
+          success: true,
+          data: {
+            posts: [
+              {
+                id: 1,
+                user_id: 1,
+                title: 'テスト投稿 1',
+                content: 'Content',
+                published: true,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              },
+            ],
+            pagination: {
+              page: page,
+              per_page: 20,
+              total_count: 42,
+              total_pages: 3,
+            },
+          },
+        });
+      })
+    );
+
+    const { router } = renderPostListPage({ route: '/posts?page=999' });
+
+    // 最終ページ（3ページ）へリダイレクトされることを確認
+    await waitFor(() => {
+      expect(router.state.location.search).toBe('?page=3');
+    });
+
+    // リダイレクト後、記事が表示されることを確認
+    await waitFor(() => {
+      expect(screen.getByText('テスト投稿 1')).toBeInTheDocument();
+    });
+  });
+
   it('displays empty state when no posts exist', async () => {
     // 空のレスポンスを返すようにモック
     server.use(

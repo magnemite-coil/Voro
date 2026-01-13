@@ -73,6 +73,19 @@
   }
 }
 
+/* テーブル部分のローディング状態（ページ遷移時） */
+.tableLoadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+}
+
 /* エラー状態 */
 .errorContainer {
   display: flex;
