@@ -1,0 +1,65 @@
+/* components/post/Pagination/Pagination.module.css */
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 30px;
+}
+
+.pageNumbers {
+  display: flex;
+  gap: 5px;
+}
+
+.pageButton,
+.navButton {
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  min-width: 45px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pageButton:hover:not(:disabled),
+.navButton:hover:not(:disabled) {
+  background: rgba(54, 249, 246, 0.1);
+  box-shadow: 0 0 10px rgba(54, 249, 246, 0.3);
+}
+
+.pageButton:disabled,
+.navButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pageButton.active {
+  background: rgba(54, 249, 246, 0.2);
+  box-shadow: 0 0 15px rgba(54, 249, 246, 0.4);
+  text-shadow: 0 0 8px var(--neon-cyan);
+}
+
+.ellipsis {
+  padding: 10px 8px;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 480px) {
+  .pagination {
+    flex-wrap: wrap;
+  }
+
+  .pageButton,
+  .navButton {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    min-width: 40px;
+  }
+}

@@ -16,6 +16,7 @@
    ;; 投稿フィクスチャ
    :create-test-post
    :create-test-posts
+   :create-test-post-with-date
    :*default-test-post-title*
    :*default-test-post-content*
 
@@ -196,3 +197,27 @@
                     (format nil "Content for post ~D" i)
                     :published published))
      user)))
+
+(defun create-test-post-with-date (&key
+                                     user
+                                     (title *default-test-post-title*)
+                                     (content *default-test-post-content*)
+                                     (published nil)
+                                     created-at)
+  "指定した created_at でテスト投稿を作成するヘルパー関数
+   テストで過去の日付の投稿を作成する際に使用
+
+   引数:
+     user: userオブジェクト（省略時は新規ユーザーを作成）
+     title: タイトル（デフォルト: Test Post Title）
+     content: 本文（デフォルト: Test post content...）
+     published: 公開フラグ（デフォルト: nil）
+     created-at: 作成日時（local-time:timestamp オブジェクト）
+
+   戻り値: (values post user)"
+  (let ((user (or user (create-test-user))))
+    (let ((post (create-post (user-id user) title content :published published)))
+      (when created-at
+        (setf (slot-value post 'mito.dao.mixin::created-at) created-at)
+        (mito:save-dao post))
+      (values post user))))

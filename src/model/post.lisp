@@ -6,7 +6,12 @@
                 :find-user-by-id)
   (:import-from :local-time
                 :format-timestring
-                :+iso-8601-format+)
+                :+iso-8601-format+
+                :now
+                :timestamp-month
+                :timestamp-year
+                :encode-timestamp
+                :+utc-zone+)
   (:export
    :post
    :post-id
@@ -22,6 +27,7 @@
    :find-published-posts
    :count-published-posts
    :count-user-posts
+   :count-user-posts-this-month
    :create-post
    :post-to-alist))
 
@@ -139,6 +145,38 @@
      (length (mito:select-dao 'post
                (sxql:where (:and (:= :user_id user-id)
                                  (:raw "\"published\" = FALSE"))))))))
+
+(defun count-user-posts-this-month (user-id)
+  "今月作成されたユーザーの投稿数をカウント
+   UTC基準で月初00:00:00から現在時刻までの投稿を対象とする
+
+   注: 既存の count-user-posts と同様に select-dao + length パターンを使用。
+       boolean条件やタイムスタンプ条件で mito:count-dao + sxql:where の動作が
+       不安定なため、実績のあるパターンを採用。
+
+   重要: timestamp-month/timestamp-year は明示的にUTCタイムゾーンで取得する。
+         local-time:now のデフォルトTZに依存すると、月境界でずれが生じる可能性がある。"
+  (let* ((current-time (now))
+         ;; 現在時刻をUTCとして解釈し、月・年を取得
+         (utc-month (timestamp-month current-time :timezone +utc-zone+))
+         (utc-year (timestamp-year current-time :timezone +utc-zone+))
+         ;; 月初 00:00:00.000 UTC
+         ;; encode-timestamp 引数順: nsec sec min hour day month year
+         (start-of-month (encode-timestamp
+                          0   ;; nsec（ナノ秒）
+                          0   ;; sec（秒）
+                          0   ;; min（分）
+                          0   ;; hour（時）
+                          1   ;; day（日 = 月初）
+                          utc-month
+                          utc-year
+                          :timezone +utc-zone+)))
+    ;; select-dao + length パターン（既存の count-user-posts と同様）
+    ;; 上限条件（current-time）を追加: 未来日付の投稿を除外
+    (length (mito:select-dao 'post
+              (sxql:where (:and (:= :user_id user-id)
+                               (:>= :created_at start-of-month)
+                               (:<= :created_at current-time)))))))
 
 (defun create-post (user-id title content &key (published nil))
   "新規投稿を作成

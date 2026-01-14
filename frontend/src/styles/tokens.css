@@ -61,4 +61,12 @@
   --shadow-cyan: 0 0 10px rgba(54, 249, 246, 0.3);
   --shadow-pink: 0 0 10px rgba(255, 126, 219, 0.2);
   --shadow-green: 0 0 8px rgba(114, 241, 184, 0.3);
+
+  /* ===== 追加: 削除ボタン用（モックアップ準拠） ===== */
+  --danger-light: #ff6b7a;
+  --glow-danger-light: 0 0 8px rgba(255, 107, 122, 0.8);
+  --shadow-danger-light: 0 0 12px rgba(255, 107, 122, 0.3);
+
+  /* ===== 追加: hover強調用 ===== */
+  --shadow-cyan-strong: 0 0 25px rgba(54, 249, 246, 0.4);
 }

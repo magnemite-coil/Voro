@@ -1,0 +1,172 @@
+/* pages/PostListPage/PostListPage.module.css */
+
+.container {
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+}
+
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-2xl);
+}
+
+/* 統計セクション */
+.statsSection {
+  margin-bottom: var(--spacing-2xl);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+/* 統計カードスケルトン */
+.statsCardSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: var(--bg-secondary);
+  padding: 25px;
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--neon-cyan);
+  box-shadow: var(--shadow-cyan);
+}
+
+/* 記事一覧セクション */
+.postsSection {
+  margin-bottom: var(--spacing-2xl);
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--neon-cyan);
+  text-shadow: var(--glow-cyan);
+  margin-bottom: var(--spacing-lg);
+}
+
+/* ローディング状態 */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: var(--text-muted);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--bg-tertiary);
+  border-top-color: var(--neon-cyan);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--spacing-md);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* テーブル部分のローディング状態（ページ遷移時） */
+.tableLoadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+}
+
+/* エラー状態 */
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-2xl);
+}
+
+.errorMessage {
+  color: var(--danger-light);
+  margin-bottom: var(--spacing-lg);
+  text-align: center;
+}
+
+.retryButton {
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retryButton:hover {
+  background: rgba(54, 249, 246, 0.1);
+  box-shadow: 0 0 10px rgba(54, 249, 246, 0.3);
+}
+
+/* 空状態 */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  padding: var(--spacing-2xl);
+  color: var(--text-muted);
+}
+
+.emptyState p {
+  margin-bottom: var(--spacing-lg);
+}
+
+.createLink {
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.createLink:hover {
+  background: rgba(54, 249, 246, 0.1);
+  box-shadow: 0 0 10px rgba(54, 249, 246, 0.3);
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .main {
+    padding: var(--spacing-lg);
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+}

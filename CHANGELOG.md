@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Post list page (PostListPage)**: Complete post management feature for logged-in users
+  - Statistics dashboard: total posts, published, drafts, this month's posts
+  - Post table with title, status badge, creation date, and action buttons
+  - Pagination with ellipsis support for large datasets
+  - Delete confirmation modal with loading state
+  - Backend stats API (`GET /api/me/posts/stats`) with UTC-based monthly counting
+  - Skeleton loaders for statistics cards during loading
+  - Empty state with "Create first post" link
+  - Accessibility: ARIA labels, table caption, keyboard navigation
+
+- **UX improvements for PostListPage**:
+  - Smooth scroll to top on page change
+  - Table-only loading indicator during pagination (preserves stats visibility)
+  - Page number validation to prevent negative values (`Math.max(1, page)`)
+  - Auto-redirect from non-existent pages to last valid page
+  - Test coverage for redirect behavior
+
 ### Changed
 
 - **Frontend code consistency refactoring**: Unified CSS class construction and type definitions
