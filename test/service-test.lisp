@@ -525,3 +525,41 @@
         (declare (ignore posts))
         (ok (= (cdr (assoc :|page| pagination)) 10000)
             "page=10001 should be capped at 10000")))))
+
+;;;
+;;; list-user-posts, list-my-posts 空リストテスト
+;;;
+
+(deftest test-list-user-posts-empty
+  (with-test-environment
+    (testing "公開投稿が0件のユーザーの投稿一覧"
+      (multiple-value-bind (user session-id)
+          (register-user "listuser_empty1" "password123" :email "lu_empty1@example.com")
+        (declare (ignore session-id))
+        (let ((user-id (voro.model.user:user-id user)))
+          (multiple-value-bind (posts pagination)
+              (list-user-posts user-id :page 1 :per-page 10)
+            ;; posts検証
+            (ok (zerop (length posts)))
+            ;; pagination全項目検証（回帰テスト強化）
+            (ok (= (cdr (assoc :|page| pagination)) 1))
+            (ok (= (cdr (assoc :|per_page| pagination)) 10))
+            (ok (= (cdr (assoc :|total_count| pagination)) 0))
+            (ok (= (cdr (assoc :|total_pages| pagination)) 0))))))))
+
+(deftest test-list-my-posts-empty
+  (with-test-environment
+    (testing "投稿が0件のユーザーの自分の投稿一覧"
+      (multiple-value-bind (user session-id)
+          (register-user "listuser_empty2" "password123" :email "lu_empty2@example.com")
+        (declare (ignore session-id))
+        (let ((user-id (voro.model.user:user-id user)))
+          (multiple-value-bind (posts pagination)
+              (list-my-posts user-id :page 1 :per-page 10 :published :all)
+            ;; posts検証
+            (ok (zerop (length posts)))
+            ;; pagination全項目検証（回帰テスト強化）
+            (ok (= (cdr (assoc :|page| pagination)) 1))
+            (ok (= (cdr (assoc :|per_page| pagination)) 10))
+            (ok (= (cdr (assoc :|total_count| pagination)) 0))
+            (ok (= (cdr (assoc :|total_pages| pagination)) 0))))))))

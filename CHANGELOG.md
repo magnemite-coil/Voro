@@ -52,6 +52,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added tests for connection disconnect failure scenarios
   - Improved test documentation with Infrastructure layer exception notes
 
+- **Service layer test coverage**: Achieved 100% branch coverage for `service/post.lisp`
+  - Added `test-list-user-posts-empty`: Tests pagination when user has 0 public posts
+  - Added `test-list-my-posts-empty`: Tests pagination when user has 0 posts
+  - Branch coverage improved from 93.3% (28/30) to 100% (30/30)
+  - Both tests validate all pagination fields (page, per_page, total_count, total_pages)
+
 ### Added
 
 - **Signup page**: Complete user registration feature with accessibility support
