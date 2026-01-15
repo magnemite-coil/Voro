@@ -10,7 +10,8 @@
                 :http-put
                 :http-delete
                 :assert-status
-                :assert-json-response)
+                :assert-json-response
+                :assert-500-error-response)
   (:import-from :voro.test.fixtures
                 :create-test-user
                 :create-test-session)
@@ -29,25 +30,6 @@
 ;;;
 ;;; 目標: カバレッジを 81.3% → 95%+ に向上
 ;;;
-
-;;;
-;;; 共通ヘルパー: 500エラーレスポンス検証
-;;; 注: post-test.lisp にも同じ関数が存在。将来的に http-helper.lisp へ移動を推奨
-;;;
-
-(defun assert-500-error-response (body)
-  "500エラーレスポンスの形式を検証する。
-   期待形式: {\"success\": false, \"error\": \"string\", \"error_id\": \"...\"}
-   - success が false であること
-   - error が文字列であること
-   - error_id がトップレベルに存在すること"
-  (let* ((parsed (jzon:parse body))
-         (success (gethash "success" parsed))
-         (error-msg (gethash "error" parsed))
-         (error-id (gethash "error_id" parsed)))
-    (ok (not success) "success should be false")
-    (ok (stringp error-msg) "error should be a string")
-    (ok error-id "error_id should exist at top level")))
 
 ;;; ==========================================================================
 ;;; カテゴリA: JSON型変換エッジケース

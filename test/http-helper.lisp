@@ -24,6 +24,7 @@
    :assert-status
    :assert-json-response
    :assert-cookie
+   :assert-500-error-response
 
    ;; 認証ヘルパー
    :with-authenticated-user))
@@ -290,6 +291,20 @@
     (format t "~&[DEBUG] Set-Cookie header: ~A~%" set-cookie)
     (ok (and set-cookie (search name set-cookie))
         (format nil "Cookie '~A' is set" name))))
+
+(defun assert-500-error-response (body)
+  "500エラーレスポンスの形式を検証する。
+   期待形式: {\"success\": false, \"error\": \"string\", \"error_id\": \"...\"}
+   - success が false であること
+   - error が文字列であること
+   - error_id がトップレベルに存在すること"
+  (let* ((parsed (jzon:parse body))
+         (success (gethash "success" parsed))
+         (error-msg (gethash "error" parsed))
+         (error-id (gethash "error_id" parsed)))
+    (ok (not success) "success should be false")
+    (ok (stringp error-msg) "error should be a string")
+    (ok error-id "error_id should exist at top level")))
 
 ;;;
 ;;; 認証ヘルパー

@@ -6,7 +6,8 @@
   (:import-from :voro.test.http-helper
                 :with-test-server
                 :http-get
-                :assert-status)
+                :assert-status
+                :assert-500-error-response)
   (:import-from :voro.test.fixtures
                 :create-test-user
                 :create-test-session
@@ -167,21 +168,6 @@
 ;;; ==========================================================================
 ;;; 500エラーテスト
 ;;; ==========================================================================
-
-;;; 共通ヘルパー: 500エラーレスポンス検証
-(defun assert-500-error-response (body)
-  "500エラーレスポンスの形式を検証する。
-   期待形式: {\"success\": false, \"error\": \"string\", \"error_id\": \"...\"}
-   - success が false であること
-   - error が文字列であること
-   - error_id がトップレベルに存在すること"
-  (let* ((parsed (jzon:parse body))
-         (success (gethash "success" parsed))
-         (error-msg (gethash "error" parsed))
-         (error-id (gethash "error_id" parsed)))
-    (ok (not success) "success should be false")
-    (ok (stringp error-msg) "error should be a string")
-    (ok error-id "error_id should exist at top level")))
 
 ;;; E-4: GET /api/me/posts/stats - 内部エラー
 (deftest test-get-post-stats-internal-error
