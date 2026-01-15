@@ -58,6 +58,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Branch coverage improved from 93.3% (28/30) to 100% (30/30)
   - Both tests validate all pagination fields (page, per_page, total_count, total_pages)
 
+- **Handler layer test coverage**: Added 17 edge case tests for `handler/post.lisp`
+  - Expression coverage improved from 81.3% (357/439) to 91.3% (401/439)
+  - JSON type handling: Missing content, explicit draft, strict type check
+  - Partial updates: Content-only, empty body, null values
+  - Pagination edge cases: Zero, negative values, extreme numbers
+  - Special characters: Japanese, newlines, emoji, boundary values
+  - Internal error handling: 500 error tests for GET/PUT/DELETE/stats endpoints
+  - Extracted `assert-500-error-response` helper to shared `http-helper.lisp`
+
 ### Added
 
 - **Signup page**: Complete user registration feature with accessibility support

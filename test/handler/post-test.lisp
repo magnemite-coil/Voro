@@ -11,6 +11,7 @@
                 :http-delete
                 :assert-status
                 :assert-json-response
+                :assert-500-error-response
                 :with-authenticated-user)
   (:import-from :voro.test.fixtures
                 :create-test-user
@@ -817,24 +818,6 @@
                             :cookies (list (cons "session_id" session-id)))
               (declare (ignore body headers))
               (assert-status 400 status))))))))
-
-;;;
-;;; 共通ヘルパー: 500エラーレスポンス検証
-;;;
-
-(defun assert-500-error-response (body)
-  "500エラーレスポンスの形式を検証する。
-   期待形式: {\"success\": false, \"error\": \"string\", \"error_id\": \"...\"}
-   - success が false であること
-   - error が文字列であること
-   - error_id がトップレベルに存在すること"
-  (let* ((parsed (com.inuoe.jzon:parse body))
-         (success (gethash "success" parsed))
-         (error-msg (gethash "error" parsed))
-         (error-id (gethash "error_id" parsed)))
-    (ok (not success) "success should be false")
-    (ok (stringp error-msg) "error should be a string")
-    (ok error-id "error_id should exist at top level")))
 
 ;;;
 ;;; 境界値・エラーハンドリングテスト（カバレッジ拡充）

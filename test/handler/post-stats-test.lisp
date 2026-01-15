@@ -6,7 +6,8 @@
   (:import-from :voro.test.http-helper
                 :with-test-server
                 :http-get
-                :assert-status)
+                :assert-status
+                :assert-500-error-response)
   (:import-from :voro.test.fixtures
                 :create-test-user
                 :create-test-session
@@ -23,6 +24,9 @@
                 :encode-timestamp
                 :timestamp-
                 :+utc-zone+)
+  ;; 500エラーテスト用
+  (:import-from :voro.service.post
+                :get-user-post-stats)
   (:local-nicknames (:jzon :com.inuoe.jzon)))
 
 (in-package :voro.test.handler.post-stats)
@@ -160,3 +164,33 @@
                 (ok (= (gethash "total" stats) 2))
                 (ok (= (gethash "this_month" stats) 1))  ;; 月初の投稿のみ
                 ))))))))
+
+;;; ==========================================================================
+;;; 500エラーテスト
+;;; ==========================================================================
+
+;;; E-4: GET /api/me/posts/stats - 内部エラー
+(deftest test-get-post-stats-internal-error
+  (testing "GET /api/me/posts/stats - サービス層エラー時は500"
+    (with-test-environment
+      (with-test-server
+        (with-test-db
+          (multiple-value-bind (session-id user)
+              (create-test-session)
+            (declare (ignore user))
+            ;; get-user-post-stats を一時的に上書きしてエラーを発生させる
+            (let ((original-fn #'voro.service.post:get-user-post-stats))
+              (setf (fdefinition 'voro.service.post:get-user-post-stats)
+                    (lambda (&rest args)
+                      (declare (ignore args))
+                      (error "Simulated database error")))
+              (unwind-protect
+                  (multiple-value-bind (body status headers)
+                      (http-get "/api/me/posts/stats"
+                               :cookies (list (cons "session_id" session-id)))
+                    (declare (ignore headers))
+                    (assert-status 500 status)
+                    (assert-500-error-response body))
+                ;; 必ず元の関数を復元
+                (setf (fdefinition 'voro.service.post:get-user-post-stats)
+                      original-fn)))))))))

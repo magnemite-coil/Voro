@@ -9,7 +9,8 @@
                 :http-get
                 :assert-status
                 :assert-json-response
-                :assert-cookie)
+                :assert-cookie
+                :assert-500-error-response)
   (:import-from :voro.test.fixtures
                 :create-test-user)
   (:import-from :voro.test.helper.mock
@@ -206,20 +207,6 @@
 ;;;
 ;;; HA-01: 登録時の内部エラーテスト
 ;;;
-
-(defun assert-500-error-response (body)
-  "500エラーレスポンスの形式を検証する。
-   期待形式: {\"success\": false, \"error\": \"string\", \"error_id\": \"...\"}
-   - success が false であること
-   - error が文字列であること
-   - error_id がトップレベルに存在すること"
-  (let* ((parsed (com.inuoe.jzon:parse body))
-         (success (gethash "success" parsed))
-         (error-msg (gethash "error" parsed))
-         (error-id (gethash "error_id" parsed)))
-    (ok (not success) "success should be false")
-    (ok (stringp error-msg) "error should be a string")
-    (ok error-id "error_id should exist at top level")))
 
 (deftest auth-register-internal-error-test
   (testing "POST /api/auth/register - 内部エラー時は500を返す"
