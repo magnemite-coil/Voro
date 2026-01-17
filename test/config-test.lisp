@@ -38,6 +38,35 @@
              ;; 元々未設定だった場合は環境変数を削除
              (sb-posix:unsetenv ,name))))))
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defmacro with-error-output-capture (&body body)
+    "body を実行し、(values body-result captured-output) を返す
+     - body-result: body の実行結果
+     - captured-output: *error-output* にキャプチャされた文字列
+     テスト中にエラーが発生しても元の出力先は確実に復元される"
+    (let ((stream (gensym "STREAM"))
+          (original (gensym "ORIGINAL"))
+          (result (gensym "RESULT")))
+      `(let ((,stream (make-string-output-stream))
+             (,original *error-output*))
+         (unwind-protect
+              (progn
+                (setf *error-output* ,stream)
+                (let ((,result (progn ,@body)))
+                  (values ,result (get-output-stream-string ,stream))))
+           (setf *error-output* ,original))))))
+
+;;;
+;;; ヘルパー関数
+;;;
+
+(defun env-vars-unset-p (&rest names)
+  "指定された環境変数がすべて未設定の場合に T を返す
+   注: uiop:getenv は未設定時に NIL を返す。
+       空文字列 \"\" が設定されている場合は「設定済み」とみなされ NIL を返す。
+       これは意図的な動作であり、空文字列も有効な設定値として扱う。"
+  (every #'null (mapcar #'uiop:getenv names)))
+
 ;;;
 ;;; valid-port-p テスト（内部関数）
 ;;;
@@ -455,3 +484,197 @@
         "*db-health-check-enabled* is boolean-like (nil, list, or t)")
     (ok (typep voro.config:*redis-health-check-enabled* '(or null cons (eql t)))
         "*redis-health-check-enabled* is boolean-like (nil, list, or t)")))
+
+;;;
+;;; Phase 1: 環境変数読み込みテストの拡充
+;;; :description パラメータ付きの get-config 呼び出しをテスト
+;;;
+
+(deftest test-get-config-db-env-vars
+  (testing "DB名の読み込み（:description付き）"
+    (with-env-var ("VORO_TEST_DB_NAME" "custom_test_db")
+      (ok (string= "custom_test_db"
+                   (get-config "VORO_TEST_DB_NAME" :string "voro_test"
+                               :description "Test database name")))))
+
+  (testing "DBユーザーの読み込み"
+    (with-env-var ("VORO_TEST_DB_USER" "custom_user")
+      (ok (string= "custom_user"
+                   (get-config "VORO_TEST_DB_USER" :string "voro_test_user"
+                               :description "Database user")))))
+
+  (testing "DBパスワードの読み込み"
+    (with-env-var ("VORO_TEST_DB_PASSWORD" "custom_password")
+      (ok (string= "custom_password"
+                   (get-config "VORO_TEST_DB_PASSWORD" :string "voro_test_password"
+                               :description "Database password"))))))
+
+(deftest test-get-config-redis-env-vars
+  (testing "Redis DB番号の読み込み（バリデータ付き）"
+    (with-env-var ("VORO_TEST_REDIS_DB" "2")
+      (ok (= 2 (get-config "VORO_TEST_REDIS_DB" :integer 1
+                           :validator #'voro.config::valid-redis-db-p
+                           :description "Redis database number")))))
+
+  (testing "Redis DB番号の読み込み（別のデフォルト値）"
+    (with-env-var ("VORO_TEST_REDIS_DB_ALT" "3")
+      (ok (= 3 (get-config "VORO_TEST_REDIS_DB_ALT" :integer 0
+                           :validator #'voro.config::valid-redis-db-p
+                           :description "Redis database number"))))))
+
+;;;
+;;; Phase 2: エラー出力パスのテスト追加
+;;; get-config のエラーメッセージ出力を検証
+;;;
+
+(deftest test-get-config-error-warning-output
+  (testing "パースエラー時に警告メッセージを出力"
+    (with-env-var ("VORO_TEST_INT" "invalid")
+      (multiple-value-bind (result output)
+          (with-error-output-capture
+            (get-config "VORO_TEST_INT" :integer 3000))
+        ;; 戻り値の検証（デフォルト値へのフォールバック）
+        (ok (= result 3000)
+            "Should fall back to default value")
+        ;; 出力内容の検証
+        (ok (search "CONFIG WARNING" output)
+            "Warning message contains 'CONFIG WARNING'")
+        (ok (search "VORO_TEST_INT" output)
+            "Warning message contains variable name")
+        (ok (search "invalid" output)
+            "Warning message contains invalid value"))))
+
+  (testing "バリデーション失敗時に description を出力"
+    (with-env-var ("VORO_TEST_PORT" "99999")
+      (multiple-value-bind (result output)
+          (with-error-output-capture
+            (get-config "VORO_TEST_PORT" :integer 3000
+                        :validator #'voro.config::valid-port-p
+                        :description "Test port"))
+        ;; 戻り値の検証
+        (ok (= result 3000)
+            "Should fall back to default value")
+        ;; 出力内容の検証
+        (ok (search "CONFIG WARNING" output)
+            "Warning message contains 'CONFIG WARNING'")
+        (ok (search "Test port" output)
+            "Warning message contains description"))))
+
+  (testing "バリデーション失敗時に description なしでも動作"
+    ;; :description を省略した場合のエッジケース
+    (with-env-var ("VORO_TEST_PORT_NO_DESC" "99999")
+      (multiple-value-bind (result output)
+          (with-error-output-capture
+            (get-config "VORO_TEST_PORT_NO_DESC" :integer 3000
+                        :validator #'voro.config::valid-port-p))
+        ;; 戻り値の検証
+        (ok (= result 3000)
+            "Should fall back to default value")
+        ;; 出力内容の検証
+        (ok (search "CONFIG WARNING" output)
+            "Warning without description still outputs CONFIG WARNING")
+        ;; description なしの場合の出力形式を検証
+        ;;
+        ;; 背景: config.lisp の format 文は2行出力される:
+        ;;   1行目: "CONFIG WARNING: Failed to parse ~A='~A' (~A)~%"
+        ;;   2行目: "CONFIG WARNING: Using default value: ~A~@[ (~A)~]~%~%"
+        ;;
+        ;; 1行目には必ず `(~A)` でエラーオブジェクトが出力されるため、
+        ;; 単純な `(search " (" output)` は常に true になる。
+        ;;
+        ;; 2行目の ~@[ (~A)~] は条件付き書式で、description が:
+        ;;   - 非NIL の場合: " (description)" を出力
+        ;;   - NIL の場合: 何も出力しない（スキップ）
+        ;;
+        ;; このテストでは :description を省略しているため、
+        ;; 2行目に "Using default value: 3000 (" が含まれないことを検証する
+        ;; （1行目には必ず括弧が含まれるため、2行目固有のパターンで検証）
+        (ok (not (search "Using default value: 3000 (" output))
+            "Warning without description should not contain description in second line")))))
+
+;;;
+;;; Phase 3: 回帰テスト（現在の設定値検証）
+;;; test環境でのパラメータ値が正しいことを検証
+;;;
+
+(deftest test-current-environment-values
+  ;; 前提条件チェック: test環境でない場合はスキップ
+  (if (not (string= voro.config:*app-env* "test"))
+      (pass (format nil "Skipped: This test requires APP_ENV=test (current: ~A)"
+                    voro.config:*app-env*))
+      ;; test環境の場合のみテストを実行
+      (progn
+        (testing "test環境であることを確認"
+          (ok (string= voro.config:*app-env* "test")
+              "APP_ENV should be 'test'"))
+
+        (testing "test環境でのDB設定（デフォルト値）"
+          ;; 前提条件チェック: 環境変数が設定されている場合はスキップ
+          (if (env-vars-unset-p "TEST_DB_NAME" "TEST_DB_USER")
+              (progn
+                (ok (string= voro.config:*db-name* "voro_test")
+                    "*db-name* should be 'voro_test' (default for test env)")
+                (ok (string= voro.config:*db-user* "voro_test_user")
+                    "*db-user* should be 'voro_test_user' (default for test env)"))
+              (pass "Skipped: TEST_DB_NAME or TEST_DB_USER is set")))
+
+        (testing "test環境でのRedis設定（デフォルト値）"
+          (if (env-vars-unset-p "TEST_REDIS_DB")
+              (ok (= voro.config:*redis-db* 1)
+                  "*redis-db* should be 1 (default for test env)")
+              (pass "Skipped: TEST_REDIS_DB is set")))
+
+        (testing "test環境でのリトライ設定（デフォルト値）"
+          (if (env-vars-unset-p "DB_MAX_RETRIES" "REDIS_MAX_RETRIES")
+              (progn
+                (ok (= voro.config:*db-max-retries* 3)
+                    "*db-max-retries* should be 3 (default for non-production)")
+                (ok (= voro.config:*redis-max-retries* 3)
+                    "*redis-max-retries* should be 3 (default for non-production)"))
+              (pass "Skipped: DB_MAX_RETRIES or REDIS_MAX_RETRIES is set")))
+
+        (testing "test環境でのヘルスチェック設定（デフォルト値）"
+          (if (env-vars-unset-p "DB_HEALTH_CHECK_ENABLED" "REDIS_HEALTH_CHECK_ENABLED")
+              (progn
+                ;; test環境ではデフォルトで無効
+                (ok (not voro.config:*db-health-check-enabled*)
+                    "*db-health-check-enabled* should be nil (default for non-production)")
+                (ok (not voro.config:*redis-health-check-enabled*)
+                    "*redis-health-check-enabled* should be nil (default for non-production)"))
+              (pass "Skipped: health check env vars are set"))))))
+
+;;;
+;;; Phase 4: S3パラメータのバインドテスト追加
+;;; S3関連パラメータ（4つ）のテストを追加
+;;;
+
+(deftest test-s3-config-parameters
+  (testing "S3設定パラメータが定義されている"
+    (ok (boundp 'voro.config:*s3-access-key-id*)
+        "*s3-access-key-id* is bound")
+    (ok (boundp 'voro.config:*s3-secret-access-key*)
+        "*s3-secret-access-key* is bound")
+    (ok (boundp 'voro.config:*s3-bucket-name*)
+        "*s3-bucket-name* is bound")
+    (ok (boundp 'voro.config:*s3-region*)
+        "*s3-region* is bound"))
+
+  (testing "S3パラメータの型が正しい"
+    ;; *s3-region* はデフォルト値があるため文字列
+    (ok (stringp voro.config:*s3-region*)
+        "*s3-region* should be a string")
+    ;; 他のS3パラメータは未設定時に nil（環境変数が設定されていれば文字列）
+    (ok (typep voro.config:*s3-access-key-id* '(or null string))
+        "*s3-access-key-id* should be nil or string")
+    (ok (typep voro.config:*s3-secret-access-key* '(or null string))
+        "*s3-secret-access-key* should be nil or string")
+    (ok (typep voro.config:*s3-bucket-name* '(or null string))
+        "*s3-bucket-name* should be nil or string"))
+
+  (testing "S3リージョンのデフォルト値"
+    ;; S3_REGION 環境変数が設定されている場合はスキップ
+    ;; （環境変数が設定済みの場合、デフォルト値ではなく環境変数の値が使われる）
+    (if (env-vars-unset-p "S3_REGION")
+        (ok (string= "ap-northeast-1" voro.config:*s3-region*)
+            "Default S3 region should be Tokyo (ap-northeast-1)")
+        (pass "Skipped: S3_REGION is set"))))
