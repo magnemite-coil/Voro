@@ -67,6 +67,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Internal error handling: 500 error tests for GET/PUT/DELETE/stats endpoints
   - Extracted `assert-500-error-response` helper to shared `http-helper.lisp`
 
+- **Config layer test coverage**: Added quality assurance tests for `config.lisp`
+  - Added 5 test cases covering environment variable reading, error output, and regression tests
+  - Phase 1: DB/Redis environment variable tests with `:description` parameter
+  - Phase 2: Error warning output content validation using `with-error-output-capture` macro
+  - Phase 3: Test environment regression tests with `env-vars-unset-p` helper
+  - Phase 4: S3 parameter binding tests
+  - Note: Coverage remained at 24.6% due to structural constraints (defparameter load-time evaluation)
+  - Tests provide quality assurance value despite not increasing coverage metrics
+
 ### Added
 
 - **Signup page**: Complete user registration feature with accessibility support
