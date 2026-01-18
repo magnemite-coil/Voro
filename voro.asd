@@ -107,7 +107,8 @@
         :depends-on ("setup")
         :components (
           (:file "response-test")
-          (:file "log-test")))
+          (:file "log-test")
+          (:file "crypto-test")))
        (:file "model-test" :depends-on ("setup" "fixtures"))
        (:module "model"
         :depends-on ("setup" "fixtures")
