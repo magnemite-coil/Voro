@@ -76,6 +76,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Note: Coverage remained at 24.6% due to structural constraints (defparameter load-time evaluation)
   - Tests provide quality assurance value despite not increasing coverage metrics
 
+- **Crypto layer regression tests**: Added PBKDF2 parameter regression tests for `util/crypto.lisp`
+  - Added 2 test cases (8 assertions) for security parameter validation
+  - `test-crypto-parameters-defined`: Verifies parameter binding, types, and expected values
+  - `test-crypto-security-settings`: Validates minimum security thresholds (iterations >= 10,000, SHA-256+)
+  - Note: Coverage remained at 85.7% due to sb-cover limitations with defparameter
+  - Tests detect unintended changes to security-critical PBKDF2 configuration
+
 ### Added
 
 - **Signup page**: Complete user registration feature with accessibility support
