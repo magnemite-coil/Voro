@@ -78,6 +78,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Crypto layer regression tests**: Added PBKDF2 parameter regression tests for `util/crypto.lisp`
   - Added 2 test cases (8 assertions) for security parameter validation
+
+- **JSON utility test coverage**: Added comprehensive tests for `util/json.lisp`
+  - Created `test/util/json-test.lisp` with 9 test cases covering all exported functions
+  - Tests include: to-json, to-json-plist, parse-json, alist-to-hash-table-recursive, plist-to-hash-table
+  - Edge cases: Japanese characters, special characters, deep nesting, large data (100+ elements)
+  - Error handling: Invalid JSON, empty string, unclosed braces
+  - Expression coverage: 97.8% (90/92), Branch coverage: 100% (28/28)
+
+- **Post service test coverage**: Added tests for uncovered areas of `service/post.lisp`
+  - Created `test/service/post-test.lisp` with 5 test cases
+  - DB error propagation test using mock
+  - `get-user-post-stats` function tests (statistics, empty posts, this_month with UTC)
+  - Internal function tests: validate-title, validate-content, normalize-pagination
+  - Expression coverage: 91.6% (315/344), Branch coverage: 100% (30/30)
   - `test-crypto-parameters-defined`: Verifies parameter binding, types, and expected values
   - `test-crypto-security-settings`: Validates minimum security thresholds (iterations >= 10,000, SHA-256+)
   - Note: Coverage remained at 85.7% due to sb-cover limitations with defparameter
