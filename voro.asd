@@ -108,7 +108,8 @@
         :components (
           (:file "response-test")
           (:file "log-test")
-          (:file "crypto-test")))
+          (:file "crypto-test")
+          (:file "json-test")))
        (:file "model-test" :depends-on ("setup" "fixtures"))
        (:module "model"
         :depends-on ("setup" "fixtures")
@@ -132,7 +133,8 @@
        (:module "service"
         :depends-on ("setup" "fixtures" "helper")
         :components (
-          (:file "auth-test")))
+          (:file "auth-test")
+          (:file "post-test")))
 
        (:module "handler"
         :depends-on ("setup" "fixtures" "http-helper" "helper")
