@@ -27,7 +27,10 @@
    :assert-500-error-response
 
    ;; 認証ヘルパー
-   :with-authenticated-user))
+   :with-authenticated-user
+
+   ;; ユーティリティ（direct-call-helper用）
+   :alist-to-hash-table))
 
 (in-package :voro.test.http-helper)
 
