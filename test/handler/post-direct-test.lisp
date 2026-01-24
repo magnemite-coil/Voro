@@ -569,3 +569,43 @@
                             :cookies (list (cons "session_id" session-id)))
               (declare (ignore body headers))
               (assert-direct-status 400 status))))))))
+
+;;;
+;;; GET /api/me/posts/stats - 自分の投稿統計（直接呼び出し）
+;;;
+
+(deftest my-posts-stats-direct-success-test
+  (testing "GET /api/me/posts/stats - 投稿統計取得成功（直接呼び出し）"
+    (with-test-environment
+      (with-test-db
+        (multiple-value-bind (session-id user)
+            (create-test-session)
+          (declare (ignore user))
+          ;; 投稿作成（公開1件、下書き1件）
+          (direct-post "/api/posts"
+                      :json (list (cons :|title| "Public Post")
+                                 (cons :|content| "Content")
+                                 (cons :|published| t))
+                      :cookies (list (cons "session_id" session-id)))
+          (direct-post "/api/posts"
+                      :json (list (cons :|title| "Draft Post")
+                                 (cons :|content| "Content")
+                                 (cons :|published| nil))
+                      :cookies (list (cons "session_id" session-id)))
+
+          ;; 統計取得
+          (multiple-value-bind (body status headers)
+              (direct-get "/api/me/posts/stats"
+                         :cookies (list (cons "session_id" session-id)))
+            (declare (ignore headers))
+            (assert-direct-status 200 status)
+            (assert-direct-json body "data" "stats")))))))
+
+(deftest my-posts-stats-direct-unauthorized-test
+  (testing "GET /api/me/posts/stats - 未認証エラー（直接呼び出し）"
+    (with-test-environment
+      (with-test-db
+        (multiple-value-bind (body status headers)
+            (direct-get "/api/me/posts/stats")
+          (declare (ignore body headers))
+          (assert-direct-status 401 status))))))
