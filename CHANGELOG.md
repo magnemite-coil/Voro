@@ -48,6 +48,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Infrastructure
 
+- **Handler layer direct-call test infrastructure**: Added test infrastructure for Handler layer code coverage measurement
+  - Created `test/direct-call-helper.lisp` with Lack env construction helpers
+  - Added `test/handler/auth-direct-test.lisp` (6 test cases) for authentication endpoints
+  - Added `test/handler/post-direct-test.lisp` (30 test cases) for post endpoints
+  - Handler layer coverage: auth.lisp 0% → 87.9%, post.lisp 0% → 91.3%
+  - Uses `lack.component:call` for same-process execution (sb-cover compatible)
+  - Maintains existing HTTP integration tests for regression testing
+
 - **Infrastructure layer test coverage**: Enhanced error handling branch coverage
   - Added tests for connection disconnect failure scenarios
   - Improved test documentation with Infrastructure layer exception notes
