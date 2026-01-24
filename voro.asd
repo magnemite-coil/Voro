@@ -143,6 +143,7 @@
           (:file "auth-test")
           (:file "auth-direct-test")
           (:file "post-test")
+          (:file "post-direct-test")
           (:file "post-stats-test")
           (:file "post-edge-cases-test")))
        (:file "web-test" :depends-on ("setup"))
