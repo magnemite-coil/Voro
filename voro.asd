@@ -99,6 +99,7 @@
        (:file "setup")
        (:file "fixtures" :depends-on ("setup"))
        (:file "http-helper" :depends-on ("setup"))
+       (:file "direct-call-helper" :depends-on ("setup" "http-helper"))
        (:file "util-test" :depends-on ("setup"))
        (:file "config-test" :depends-on ("setup"))
        (:file "db-test" :depends-on ("setup"))
@@ -137,10 +138,12 @@
           (:file "post-test")))
 
        (:module "handler"
-        :depends-on ("setup" "fixtures" "http-helper" "helper")
+        :depends-on ("setup" "fixtures" "http-helper" "helper" "direct-call-helper")
         :components (
           (:file "auth-test")
+          (:file "auth-direct-test")
           (:file "post-test")
+          (:file "post-direct-test")
           (:file "post-stats-test")
           (:file "post-edge-cases-test")))
        (:file "web-test" :depends-on ("setup"))
