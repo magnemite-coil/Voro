@@ -206,7 +206,19 @@
       (ok (not (verify-password "password " hashed))
           "Trailing space fails")
       (ok (not (verify-password " password " hashed))
-          "Both spaces fail"))))
+          "Both spaces fail")))
+
+  (testing "空白のみのパスワードは空文字と区別される"
+    (let ((hashed-spaces (hash-password "   "))
+          (hashed-empty (hash-password "")))
+      (ok (verify-password "   " hashed-spaces)
+          "Spaces-only password verifies correctly")
+      (ok (not (verify-password "" hashed-spaces))
+          "Empty password fails against spaces hash")
+      (ok (verify-password "" hashed-empty)
+          "Empty password verifies correctly")
+      (ok (not (verify-password "   " hashed-empty))
+          "Spaces-only fails against empty hash"))))
 
 ;;;
 ;;; エラー型の:reportラムダをテスト
