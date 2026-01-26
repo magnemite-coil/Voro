@@ -218,7 +218,28 @@
       (ok (verify-password "" hashed-empty)
           "Empty password verifies correctly")
       (ok (not (verify-password "   " hashed-empty))
-          "Spaces-only fails against empty hash"))))
+          "Spaces-only fails against empty hash")))
+
+  (testing "改行を含むパスワードは区別される"
+    (let ((hashed-lf (hash-password "password
+"))
+          (hashed-crlf (hash-password (format nil "password~C~C" #\Return #\Newline)))
+          (hashed-plain (hash-password "password")))
+      ;; LF改行付きパスワードの検証
+      (ok (verify-password "password
+" hashed-lf)
+          "LF newline password verifies correctly")
+      (ok (not (verify-password "password" hashed-lf))
+          "Plain password fails against LF hash")
+      ;; CRLF改行付きパスワードの検証
+      (ok (verify-password (format nil "password~C~C" #\Return #\Newline) hashed-crlf)
+          "CRLF newline password verifies correctly")
+      (ok (not (verify-password "password" hashed-crlf))
+          "Plain password fails against CRLF hash")
+      ;; LFとCRLFは異なる
+      (ok (not (verify-password "password
+" hashed-crlf))
+          "LF password fails against CRLF hash"))))
 
 ;;;
 ;;; エラー型の:reportラムダをテスト
