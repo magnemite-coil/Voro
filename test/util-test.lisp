@@ -223,8 +223,7 @@
   (testing "改行を含むパスワードは区別される"
     (let ((hashed-lf (hash-password "password
 "))
-          (hashed-crlf (hash-password (format nil "password~C~C" #\Return #\Newline)))
-          (hashed-plain (hash-password "password")))
+          (hashed-crlf (hash-password (format nil "password~C~C" #\Return #\Newline))))
       ;; LF改行付きパスワードの検証
       (ok (verify-password "password
 " hashed-lf)
