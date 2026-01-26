@@ -188,7 +188,25 @@
     (let* ((valid-hash (hash-password "password"))
            (corrupted-hash (concatenate 'string valid-hash "garbage")))
       (ok (null (verify-password "password" corrupted-hash))
-          "Corrupted hash returns NIL"))))
+          "Corrupted hash returns NIL")))
+
+  (testing "大文字小文字は区別される"
+    (let ((hashed (hash-password "Password")))
+      (ok (verify-password "Password" hashed)
+          "Same case matches")
+      (ok (not (verify-password "password" hashed))
+          "Different case fails")
+      (ok (not (verify-password "PASSWORD" hashed))
+          "All uppercase fails")))
+
+  (testing "先頭・末尾の空白は区別される"
+    (let ((hashed (hash-password "password")))
+      (ok (not (verify-password " password" hashed))
+          "Leading space fails")
+      (ok (not (verify-password "password " hashed))
+          "Trailing space fails")
+      (ok (not (verify-password " password " hashed))
+          "Both spaces fail"))))
 
 ;;;
 ;;; エラー型の:reportラムダをテスト
