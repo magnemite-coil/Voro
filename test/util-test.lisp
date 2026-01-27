@@ -10,6 +10,8 @@
   (:import-from :voro.util.crypto
                 :hash-password
                 :verify-password)
+  (:import-from :voro.util.crypto
+                voro.util.crypto::*pbkdf2-iterations*)
   (:import-from :voro.util.json
                 :alist-to-hash-table-recursive
                 :plist-to-hash-table
@@ -113,11 +115,6 @@
 ;;;
 ;;; hash-password / verify-password 追加テスト（test/util-test.lisp に追加）
 ;;;
-;;; 注意:
-;;;   - ハッシュ形式検証で使用する 100000 は src/util/crypto.lisp の
-;;;     *pbkdf2-iterations* 定数と同じ値。イテレーション回数を変更した場合は
-;;;     このテストも更新が必要
-;;;
 
 (deftest test-hash-password-edge-cases
   (testing "空文字パスワードのハッシュ化"
@@ -151,13 +148,14 @@
           "Long password can be verified")))
 
   (testing "ハッシュ形式の検証（PBKDF2形式）"
-    ;; フォーマット: PBKDF2$SHA256:100000$<salt>$<hash>
-    ;; イテレーション数を固定値で検証し、意図しない変更を検出
-    ;; 注: 100000 は src/util/crypto.lisp の *pbkdf2-iterations* と同じ値
-    ;; 注: SHA256 は ironclad が大文字で出力する
-    (let ((hashed (hash-password "testpassword")))
-      (ok (scan "^PBKDF2\\$SHA256:100000\\$" hashed)
-          "Hash should be in PBKDF2$SHA256:100000$ format with correct iteration count"))))
+    ;; フォーマット: PBKDF2$SHA256:<iterations>$<salt>$<hash>
+    ;; *pbkdf2-iterations* を参照してパターンを生成し、実装との整合性を保証
+    (let* ((hashed (hash-password "testpassword"))
+           (expected-pattern (format nil "^PBKDF2\\$SHA256:~D\\$"
+                                     voro.util.crypto::*pbkdf2-iterations*)))
+      (ok (scan expected-pattern hashed)
+          (format nil "Hash should be in PBKDF2$SHA256:~D$ format"
+                  voro.util.crypto::*pbkdf2-iterations*)))))
 
 (deftest test-verify-password-edge-cases
   (testing "空文字パスワードの検証"
@@ -188,7 +186,56 @@
     (let* ((valid-hash (hash-password "password"))
            (corrupted-hash (concatenate 'string valid-hash "garbage")))
       (ok (null (verify-password "password" corrupted-hash))
-          "Corrupted hash returns NIL"))))
+          "Corrupted hash returns NIL")))
+
+  (testing "大文字小文字は区別される"
+    (let ((hashed (hash-password "Password")))
+      (ok (verify-password "Password" hashed)
+          "Same case matches")
+      (ok (not (verify-password "password" hashed))
+          "Different case fails")
+      (ok (not (verify-password "PASSWORD" hashed))
+          "All uppercase fails")))
+
+  (testing "先頭・末尾の空白は区別される"
+    (let ((hashed (hash-password "password")))
+      (ok (not (verify-password " password" hashed))
+          "Leading space fails")
+      (ok (not (verify-password "password " hashed))
+          "Trailing space fails")
+      (ok (not (verify-password " password " hashed))
+          "Both spaces fail")))
+
+  (testing "空白のみのパスワードは空文字と区別される"
+    (let ((hashed-spaces (hash-password "   "))
+          (hashed-empty (hash-password "")))
+      (ok (verify-password "   " hashed-spaces)
+          "Spaces-only password verifies correctly")
+      (ok (not (verify-password "" hashed-spaces))
+          "Empty password fails against spaces hash")
+      (ok (verify-password "" hashed-empty)
+          "Empty password verifies correctly")
+      (ok (not (verify-password "   " hashed-empty))
+          "Spaces-only fails against empty hash")))
+
+  (testing "改行を含むパスワードは区別される"
+    (let* ((password-lf (format nil "password~%"))
+           (password-crlf (format nil "password~C~C" #\Return #\Newline))
+           (hashed-lf (hash-password password-lf))
+           (hashed-crlf (hash-password password-crlf)))
+      ;; LF改行付きパスワードの検証
+      (ok (verify-password password-lf hashed-lf)
+          "LF newline password verifies correctly")
+      (ok (not (verify-password "password" hashed-lf))
+          "Plain password fails against LF hash")
+      ;; CRLF改行付きパスワードの検証
+      (ok (verify-password password-crlf hashed-crlf)
+          "CRLF newline password verifies correctly")
+      (ok (not (verify-password "password" hashed-crlf))
+          "Plain password fails against CRLF hash")
+      ;; LFとCRLFは異なる
+      (ok (not (verify-password password-lf hashed-crlf))
+          "LF password fails against CRLF hash"))))
 
 ;;;
 ;;; エラー型の:reportラムダをテスト

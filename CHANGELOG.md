@@ -87,6 +87,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Crypto layer regression tests**: Added PBKDF2 parameter regression tests for `util/crypto.lisp`
   - Added 2 test cases (8 assertions) for security parameter validation
 
+- **Crypto layer edge case tests**: Added password verification edge case tests for `util/crypto.lisp`
+  - Case sensitivity: Verifies "Password" vs "password" vs "PASSWORD" are distinct
+  - Whitespace handling: Leading/trailing spaces are preserved, not trimmed
+  - Spaces-only passwords: Distinguishes "   " from "" (empty string)
+  - Newline handling: LF vs CRLF vs plain password are all distinct
+  - Test maintainability: Hash format test now references `*pbkdf2-iterations*` constant
+  - Added 15 assertions across 4 new test blocks
+
 - **JSON utility test coverage**: Added comprehensive tests for `util/json.lisp`
   - Created `test/util/json-test.lisp` with 9 test cases covering all exported functions
   - Tests include: to-json, to-json-plist, parse-json, alist-to-hash-table-recursive, plist-to-hash-table
