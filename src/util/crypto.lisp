@@ -18,7 +18,7 @@
 (defun hash-password (password)
   "パスワードをPBKDF2でハッシュ化
    戻り値: ハッシュ化されたパスワード（文字列）
-   フォーマット: PBKDF2$sha256:100000$<salt>$<hash>"
+   フォーマット: PBKDF2$SHA256:100000$<salt>$<hash>"
   (let ((password-octets (flexi-streams:string-to-octets
                           password
                           :external-format :utf-8)))
