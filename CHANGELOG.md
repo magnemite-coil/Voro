@@ -41,12 +41,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Redis connection state cleanup on SELECT failure**: Connection is now properly cleared when DB selection fails
+  - Prevents inconsistent connection state after `redis:red-select` failure
+  - Uses `disconnect-redis` for unified logging and state management
+
 - **Server stop error handling**: Improved `stop` function to gracefully handle `clack:stop` failures
   - Server stop errors are now caught and logged with error ID for traceability
   - When server stop fails, DB/Redis connections are preserved to prevent partial shutdown
   - Prevents application from entering inconsistent state
 
 ### Infrastructure
+
+- **Redis error path test coverage**: Added tests for `try-connect-redis` error handling paths
+  - `test-try-connect-redis-connection-failure`: Tests `redis:connect` failure handling
+  - `test-try-connect-redis-select-failure`: Tests `redis:red-select` failure with connection cleanup
+  - `test-connect-redis-retry-with-connection-failures`: Tests retry logic with partial failures
+  - Improved expression coverage for `redis.lisp` error handlers
 
 - **Handler layer direct-call test infrastructure**: Added test infrastructure for Handler layer code coverage measurement
   - Created `test/direct-call-helper.lisp` with Lack env construction helpers

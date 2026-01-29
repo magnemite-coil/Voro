@@ -475,3 +475,126 @@
           (setf (symbol-function 'redis:disconnect) original-fn)
           ;; cl-redis内部状態のクリーンアップ
           (handler-case (redis:disconnect) (error () nil)))))))
+
+;;;
+;;; try-connect-redis エラーパステスト
+;;;
+
+(deftest test-try-connect-redis-connection-failure
+  (testing "redis:connect 失敗時は NIL を返す"
+    (with-test-environment
+      ;; 事前に接続を切断（*redis-connection* を NIL に）
+      (disconnect-redis)
+      (ok (null *redis-connection*)
+          "Should start with no connection")
+
+      (let ((original-fn (symbol-function 'redis:connect)))
+        (unwind-protect
+            (progn
+              ;; redis:connect をスタブ化してエラーを発生
+              (setf (symbol-function 'redis:connect)
+                    (lambda (&rest args)
+                      (declare (ignore args))
+                      (error "Simulated Redis connection failure")))
+
+              ;; try-connect-redis を呼び出し
+              (let ((result (voro.redis::try-connect-redis)))
+                ;; 戻り値が NIL であることを確認
+                (ok (null result)
+                    "try-connect-redis should return NIL on connection failure")
+                ;; 接続失敗なので *redis-connection* は NIL のまま
+                (ok (null *redis-connection*)
+                    "*redis-connection* should remain NIL on connection failure")))
+
+          ;; 元の関数を復元
+          (setf (symbol-function 'redis:connect) original-fn)
+          ;; 注: with-test-environment の teardown は disconnect のみ行い、
+          ;; 次の with-test-environment の setup で再接続される。
+          ;; 条件付き再接続: *redis-connection* が NIL の場合のみ再接続し、
+          ;; ログノイズを削減する。
+          (unless *redis-connection*
+            (handler-case (connect-redis) (error () nil))))))))
+
+(deftest test-try-connect-redis-select-failure
+  (testing "redis:red-select 失敗時は NIL を返し、接続をクリアする"
+    (with-test-environment
+      ;; 事前に接続を切断
+      (disconnect-redis)
+      (ok (null *redis-connection*))
+
+      (let ((original-select-fn (symbol-function 'redis:red-select)))
+        (unwind-protect
+            (progn
+              ;; redis:red-select をスタブ化してエラーを発生
+              (setf (symbol-function 'redis:red-select)
+                    (lambda (db)
+                      (declare (ignore db))
+                      (error "Simulated Redis SELECT failure")))
+
+              ;; try-connect-redis を呼び出し
+              (let ((result (voro.redis::try-connect-redis)))
+                (ok (null result)
+                    "try-connect-redis should return NIL on SELECT failure")
+                ;; 実装変更により、エラーハンドラで接続がクリアされる
+                (ok (null *redis-connection*)
+                    "*redis-connection* should be cleared after SELECT failure")))
+
+          ;; cleanup: スタブを解除して再接続
+          ;; 実装変更により、try-connect-redis のエラーハンドラが disconnect-redis を
+          ;; 呼び出すため、*redis-connection* と cl-redis 内部状態の両方がクリア済み。
+          ;; したがって、追加の redis:disconnect 呼び出しは不要。
+          (setf (symbol-function 'redis:red-select) original-select-fn)
+          ;; 条件付き再接続: *redis-connection* が NIL の場合のみ。
+          ;; with-test-environment の teardown との二重再接続を避け、
+          ;; ログノイズを削減する。
+          (unless *redis-connection*
+            (handler-case (connect-redis) (error () nil))))))))
+
+(deftest test-connect-redis-retry-with-connection-failures
+  (testing "リトライ中の接続失敗と最終的な成功"
+    (with-config-override ((voro.config:*redis-max-retries* 3)
+                           (voro.config:*redis-initial-retry-delay* 0)
+                           (voro.config:*redis-max-retry-delay* 0))
+      (with-test-environment
+        ;; 事前に接続を切断
+        (disconnect-redis)
+
+        (let ((original-fn (symbol-function 'redis:connect))
+              (attempt-count 0))
+          (unwind-protect
+              (progn
+                ;; redis:connect をスタブ化: 最初の2回は失敗、3回目で成功
+                ;;
+                ;; 技術的注記: original-fn はこの let スコープでレキシカルに
+                ;; キャプチャされるため、unwind-protect の cleanup で
+                ;; symbol-function を復元した後でも、スタブのラムダ内部から
+                ;; 正しく元の関数を呼び出せる（クロージャの特性）
+                (setf (symbol-function 'redis:connect)
+                      (lambda (&rest args)
+                        (incf attempt-count)
+                        (if (<= attempt-count 2)
+                            (error "Simulated failure (attempt ~A)" attempt-count)
+                            ;; 3回目は元の関数を呼び出す（クロージャでキャプチャ済み）
+                            (apply original-fn args))))
+
+                ;; connect-redis を呼び出し（成功するまでリトライ）
+                (connect-redis)
+
+                ;; 3回試行されたことを確認
+                (ok (= attempt-count 3)
+                    (format nil "Should have attempted 3 times (got ~A)" attempt-count))
+
+                ;; 最終的に接続成功
+                (ok (not (null *redis-connection*))
+                    "*redis-connection* should be set after successful retry"))
+
+            ;; 元の関数を復元
+            (setf (symbol-function 'redis:connect) original-fn)
+            ;; 注: このテストでは3回目で接続成功するため *redis-connection* は設定済み。
+            ;; 条件付き再接続: *redis-connection* が NIL の場合のみ再接続。
+            ;; 通常は実行されないが、以下の理由で残す:
+            ;; 1. テストケース1・2との cleanup パターンの一貫性
+            ;; 2. 万が一テスト失敗した場合でも後続テストに影響しない防御的措置
+            ;; 3. 将来のテスト変更時に cleanup 漏れを防ぐ安全策
+            (unless *redis-connection*
+              (handler-case (connect-redis) (error () nil)))))))))

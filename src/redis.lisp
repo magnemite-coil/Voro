@@ -94,6 +94,12 @@
                                 :|port| *redis-port*
                                 :|db| *redis-db*
                                 :|error| (princ-to-string e)))
+      ;; 接続が中途半端な状態になっている可能性があるためクリア
+      ;; （redis:connect成功後にredis:red-select失敗のケース等）
+      ;; 注: disconnect-redis を使用することで、ログ出力と状態クリアを統一。
+      ;; disconnect-redis は log-info を出力するため、log-debug と併せて
+      ;; 2つのログが出力されるが、一貫性とトレーサビリティを優先する。
+      (disconnect-redis)
       nil)))
 
 (defun connect-redis ()
