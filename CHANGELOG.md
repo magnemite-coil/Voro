@@ -56,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `test-try-connect-redis-connection-failure`: Tests `redis:connect` failure handling
   - `test-try-connect-redis-select-failure`: Tests `redis:red-select` failure with connection cleanup
   - `test-connect-redis-retry-with-connection-failures`: Tests retry logic with partial failures
-  - Improved expression coverage for `redis.lisp` error handlers
+  - Expression coverage improved from 89.9% to 96.5% for `redis.lisp`
 
 - **Handler layer direct-call test infrastructure**: Added test infrastructure for Handler layer code coverage measurement
   - Created `test/direct-call-helper.lisp` with Lack env construction helpers
